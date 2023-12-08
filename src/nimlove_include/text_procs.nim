@@ -1,6 +1,5 @@
 
-
-proc drawText*(x, y: int; text: string; size: int; color: Color = White) =
+proc drawText*(x: int, y: int, text: string, size: int = 10, color: Color = White) =
   # todo: preload fonts of different sizes - this increases performance big time
   let nimLoveContext = getNimLoveContext()
   let surface = ttf.renderUtf8Solid(nimLoveContext.font, text, toSdlColor color)

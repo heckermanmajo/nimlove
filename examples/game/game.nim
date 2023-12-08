@@ -12,9 +12,10 @@ nimlove.setupNimLove(
   windowWidth = WindowWidth,
   windowHeight = WindowHeight,
   windowTitle = "NimLove",
+  fullScreen = false,
 )
 
-var song = nimlove.newNimLoveSound("song3.ogg")
+var song = nimlove.newNimLoveSound("song.ogg")
 discard song.play()
 
 let testImage: NimLoveImage = nimlove.newNimLoveImage("mob.png")
@@ -71,7 +72,7 @@ proc changeSize(self: SimpleObject, deltaTime: float) =
   if self.height > 300.0:
     self.height = 0.0
 
-proc test(deltaTime: float) =
+proc onUpdate(deltaTime: float) =
   testImage.draw 0, 0
   testImage.draw(
     x=pos_x,
@@ -116,4 +117,4 @@ proc onKeyDown(key: NimLoveKey) =
   echo "keyDown: ", $key
   # cnvert int to string via ascii
 
-nimlove.runProgramm(test, onKeyDown)
+nimlove.runProgramm(onUpdate, onKeyDown)

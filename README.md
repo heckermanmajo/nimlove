@@ -4,12 +4,15 @@
 
 A super simple 2d framework for beginners and connoisseurs of love2d.
 
+
 Since this project is especially for beginners, 
 the comments also explain the basics of nim-syntax and inner workings
 to get started.
 
 With nimlove you get collection of simple game-prototypes to learn from
 and mold in the image of your own game.
+
+https://sanderfrenken.github.io/Universal-LPC-Spritesheet-Character-Generator/#?body=Body_color_light&head=Human_male_light
 
 ## Examples 
 Look into the "examples" folder.
@@ -30,6 +33,7 @@ tiles
 pathfinding and chunking
 
 ## Modules
+-> commands/strategies
 -> snapshot module/orm
 -> GameObject, with camera
 -> Different Views

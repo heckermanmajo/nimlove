@@ -3,7 +3,7 @@
 # and the nim sdl2 wrapper installed
 import sdl2, sdl2/ttf, sdl2/image, sdl2/mixer, sdl2/audio
 # import standard library modules -> they are part of the nim compiler
-import std/[random, options, os, strutils]
+import std/[options, os, strutils]
 
 
 
@@ -85,17 +85,31 @@ proc getFPS*(): float =
   ## calculated by the runProgramm() proc -> main loop
   return fps
 
+
+var delayCPUWaste = true
+proc setDelayCPUWaste*(value: bool) =
+  ## This makes the program wait for on milisecond after each frame
+  ## IF the FPS is higher than 200. This is to prevent the program
+  ## from using 100% CPU for no work.
+  delayCPUWaste = value
+
+
+var mouseX, mouseY: int = 0
+var mouseRightClickThisFrame: bool = false
+proc getMouseX*(): int = return mouseX
+proc getMouseY*(): int = return mouseY
+proc getMouseRightClickThisFrame*(): bool = return mouseRightClickThisFrame
+
 # include all the procs for the nimlove-types
 include nimlove_include/nimlove_context_procs
 include nimlove_include/image_procs
 include nimlove_include/text_procs
-include nimlove_include/mouse_procs
 include nimlove_include/sound_procs
 include nimlove_include/file_procs
 
 
 proc runProgramm*(
-  mainLoop: proc(deltaTime: float) {.closure.},
+  onUpdate: proc(deltaTime: float) {.closure.},
   onKeyDown: proc(key: NimLoveKey) {.closure.} = proc(key: NimLoveKey) = discard,
   onKeyUp: proc(key: NimLoveKey) {.closure.} = proc(key: NimLoveKey) = discard,
   onKeyPressed: proc(key: NimLoveKey) {.closure.} = proc(key: NimLoveKey) = discard,
@@ -128,7 +142,7 @@ proc runProgramm*(
     let deltaTime = (newNow - now).float / 1000.0
     now = newNow
 
-    mainLoop deltaTime
+    mouseRightClickThisFrame = false
 
     var event = defaultEvent
     while pollEvent(event):
@@ -138,19 +152,35 @@ proc runProgramm*(
           break
         of KeyDown:
           onKeyDown(sdlScancodeToNimLoveKeyEnum(event.key.keysym.scancode))
-          #if event.key.keysym.scancode == SDL_SCANCODE_ESCAPE:
-          #  keepRunning = false
-          #  break
+          if event.key.keysym.scancode == SDL_SCANCODE_ESCAPE:
+            keepRunning = false
+            break
           #if event.key.keysym.scancode == SDL_SCANCODE_A:
           #  echo "A pressed"
           #  break
+
         of KeyUp:
           # echo "key up"
           discard
+        
+        of MouseButtonDown:
+          onMouseDown(event.button.x, event.button.y)
+          if event.button.button == sdl2.BUTTON_RIGHT:
+            mouseRightClickThisFrame = true
+
+        of MouseMotion:
+          onMouseMove(event.motion.x, event.motion.y)
+          mouseX = event.motion.x
+          mouseY = event.motion.y
+          
         else:
           # todo: handle other events
           discard
 
+
+    onUpdate deltaTime  # the users update function for each tick
+   
+   
     # draw fps
     # todo: text should be the first parameter
     drawText(
@@ -165,8 +195,11 @@ proc runProgramm*(
     nimLoveContext.renderer.setDrawColor toSdlColor(Green)
     nimLoveContext.renderer.fillRect(nil)
 
-    if getFPS() > 200.0:
-      delay(1)
+    # todo: add comment
+    if delayCPUWaste:
+      if getFPS() > 200.0: delay(1)
+
+  onQuit() # the user can handle the end of the program
 
   mixer.closeAudio()
   ttfQuit()

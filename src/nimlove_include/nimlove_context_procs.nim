@@ -3,6 +3,7 @@ proc newNimLoveContext*(
   WindowWidth: int = 800,
   WindowHeight: int = 600,
   Title: string = "NimLove",
+  fullScreen: bool = false,
 ): NimLoveContext =
   # todo: detailed comments
   result = NimLoveContext()
@@ -31,6 +32,11 @@ proc newNimLoveContext*(
   result.renderer.setDrawColor toSdlColor(Color 0)
   clear(result.renderer)
 
+  setTitle(result.window, Title)
+  if fullScreen:
+    echo "Try to set game to fullscreen"
+    discard setFullscreen(result.window, SDL_WINDOW_FULLSCREEN_DESKTOP) # todo: handle error
+
   # load the basic font
   var font = openFont(cstring(ABSOLUTE_PATH & "font.ttf"), 20)
   sdlFailIf font.isNil: "font could not be created"
@@ -44,11 +50,17 @@ proc setupNimLove*(
     windowWidth: int = 800,
     windowHeight: int = 600,
     windowTitle: string = "NimLove",
+    fullScreen: bool = false,
   ) =
   # set global nimLoveContext
   echo "setupNimLove"
   nimLoveContext = newNimLoveContext(
     WindowWidth = windowWidth,
     WindowHeight = windowHeight,
-    Title = windowTitle
+    Title = windowTitle,
+    fullScreen = fullScreen,
   ).some
+
+
+
+# https://stackoverflow.com/questions/33393528/how-to-get-screen-size-in-sdl
