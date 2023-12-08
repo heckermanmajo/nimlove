@@ -1,0 +1,1 @@
+nimble test && nimble run_example --verbose
