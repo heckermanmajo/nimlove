@@ -1,3 +1,24 @@
+import sdl2,  sdl2/ttf, sdl2/image, sdl2/mixer
+
+
+# import standard library modules -> they are part of the nim compiler
+import std/[options, os, strutils]
+
+import core 
+import ../nimlove/colors
+
+type NimLoveContext* = object of RootObj
+  ## The NimLoveContext is the main object that
+  ## is passed into the main loop of the program.
+  ## It contains the renderer and window objects
+  ## and provides some helper procedures.
+  renderer*: RendererPtr
+  window*: WindowPtr
+  WindowWidth*: int
+  WindowHeight*: int
+  Title*: string
+  font*: FontPtr
+
 
 proc newNimLoveContext*(
   WindowWidth: int = 800,
@@ -29,7 +50,7 @@ proc newNimLoveContext*(
   # Renderer_Accelerated or Renderer_PresentVsync or
   sdlFailIf result.renderer.isNil: "renderer could not be created"
   sdlFailIf(not ttfInit()): "SDL_TTF initialization failed"
-  result.renderer.setDrawColor toSdlColor(Color 0)
+  result.renderer.setDrawColor toSdlColor(colors.Color 0)
   clear(result.renderer)
 
   setTitle(result.window, Title)
@@ -45,6 +66,24 @@ proc newNimLoveContext*(
 
   return result
 
+var nimLoveContext: Option[NimLoveContext] = NimLoveContext.none ## \
+    ## The NimLoveContext is a global variable that is initialized by the \
+    ## setupNimLove() proc. It is used by the other procs to access the \
+    ## SDL2 context. It is not exported -> lack of asterisk.
+    ## This way we hide the SDL2 context from the user and make it easier \
+    ## to use the library.
+
+proc getNimLoveContext*(): NimLoveContext =
+  ## Returns the NimLoveContext. If the NimLoveContext is not initialized \
+  ## it throws a NimBrokenHeartError.
+  ## This proc is used to access the NimLoveContext from other procs.
+  if not nimLoveContext.isSome:
+    raise NimBrokenHeartError.newException(
+      "NimLoveContext not initialized. Call setupNimLove() first."
+    )
+  return nimLoveContext.get
+
+# https://stackoverflow.com/questions/33393528/how-to-get-screen-size-in-sdl
 
 proc setupNimLove*(
     windowWidth: int = 800,
@@ -60,7 +99,3 @@ proc setupNimLove*(
     Title = windowTitle,
     fullScreen = fullScreen,
   ).some
-
-
-
-# https://stackoverflow.com/questions/33393528/how-to-get-screen-size-in-sdl

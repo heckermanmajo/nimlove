@@ -8,6 +8,8 @@
 - add formatting for csv file, use ids and make them to eal refs
   - ref object
 
+- own embeddable config/scripting language: lua
+- and kek for even easier embedding
 
 
 - add font loader as setup function 

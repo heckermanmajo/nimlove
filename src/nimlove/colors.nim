@@ -20,6 +20,3 @@ proc toColor*(r, g, b: int): Color =
   assert b in 0..255
   result = Color (r shl 16) or (g shl 8) or b
 
-proc toSdlColor(x: Color): sdl2.Color {.inline.} =
-  let x = x.int
-  result = color(x shr 16 and 0xff, x shr 8 and 0xff, x and 0xff, 0)

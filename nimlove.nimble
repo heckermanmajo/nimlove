@@ -27,3 +27,13 @@ task tiles, "examples/tiles":
 task mouse , "examples/mouse":
   exec "nim -r c ./examples/mouse/mouse.nim"
   exec "rm ./examples/mouse/mouse"
+  
+task compall , "compile all examples":
+  exec "nim c ./examples/game/game.nim"
+  exec "rm ./examples/game/game"
+  exec "nim c ./examples/animation/animation.nim"
+  exec "rm ./examples/animation/animation"
+  exec "nim c ./examples/tiles/tiles.nim"
+  exec "rm ./examples/tiles/tiles"
+  exec "nim c ./examples/mouse/mouse.nim"
+  exec "rm ./examples/mouse/mouse"

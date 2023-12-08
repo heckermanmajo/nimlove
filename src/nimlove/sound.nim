@@ -1,4 +1,15 @@
+import ../private/[core, keys, nimlove_context]
+import sdl2, sdl2/ttf, sdl2/image, sdl2/mixer
+import std/strutils
 
+type NimLoveSound = object
+  soundFilePointerOgg: MusicPtr
+  soundFilePointerWav: ChunkPtr
+  soundFileType: string
+
+# mixer.freeChunk(sound) #clear wav
+#mixer.freeMusic(sound2) #clear ogg
+#mixer.closeAudio()
 
 proc newNimLoveSound*(filename: string): NimLoveSound =
   let nimLoveContext = getNimLoveContext() #  not used yet

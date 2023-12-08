@@ -1,30 +1,57 @@
 # import the offical nim sdl2 wrapper package
 # make sure to have sdl2 installed on your system
 # and the nim sdl2 wrapper installed
-import sdl2, sdl2/ttf, sdl2/image, sdl2/mixer, sdl2/audio
+import sdl2, sdl2/ttf, sdl2/mixer
 # import standard library modules -> they are part of the nim compiler
-import std/[options, os, strutils]
+#import std/[options, os, strutils]
 
+type NimLoveKey* = enum
+  ## An enum that represents a key on the keyboard.
+  ## Usually used on key events.
+  KEY_A
+  KEY_B
+  KEY_C
+  KEY_D
+  KEY_E
+  KEY_F
+  KEY_G
+  KEY_H
+  KEY_I
+  KEY_J
+  KEY_K
+  KEY_L
+  KEY_M
+  KEY_N
+  KEY_O
+  KEY_P
+  KEY_Q
+  KEY_R
+  KEY_S
+  KEY_T
+  KEY_U
+  KEY_V
+  KEY_W
+  KEY_X
+  KEY_Y
+  KEY_Z
+  KEY_0
+  KEY_1
+  KEY_2
+  KEY_3
+  KEY_4
+  KEY_5
+  KEY_6
+  KEY_7
+  KEY_8
+  KEY_9
+  KEY_SPACE
+  KEY_ESCAPE
 
+import private/keys
+import nimlove/colors
+import private/nimlove_context
+import private/core
 
-# defect is a special type of object that is used to throw exceptions
-# defect can on som compiler settings not be catched -> it should crash the program
-type SDLException = object of Defect
-  ## This exception is thrown when an SDL2 function fails.
-type NimBrokenHeartError = object of Defect
-  ## This exception is thrown when nimlove has some internal errors
-  ## f.e. the NimLoveContext is not initialized but a proc needs it
-
-let ABSOLUTE_PATH* = os.getAppDir() & "/" ## \
-  ## The absolute path to the directory of the executable. \
-  ## This is neccecary to load images and fonts. Since
-  ## all images and fonts are loaded from the directory of the executable.
-
-template sdlFailIf(condition: typed, reason: string) =
-  # todo: learn more about templates, so we can describe this function
-  if condition: raise SDLException.newException(
-    reason & ", SDL error " & $getError()
-  )
 
 # todo: comment
 var audio_rate : cint
@@ -44,28 +71,11 @@ sdlFailIf(
 # are visible
 # IMPORANT: We include the types before we include the procs or do
 # anything else. This way all types are available below.
-include nimlove_include/keys
-include nimlove_include/colors
-include nimlove_include/image_type
-include nimlove_include/nimlove_context_type
-include nimlove_include/sound_type
 
-var nimLoveContext: Option[NimLoveContext] = NimLoveContext.none ## \
-    ## The NimLoveContext is a global variable that is initialized by the \
-    ## setupNimLove() proc. It is used by the other procs to access the \
-    ## SDL2 context. It is not exported -> lack of asterisk.
-    ## This way we hide the SDL2 context from the user and make it easier \
-    ## to use the library.
 
-proc getNimLoveContext(): NimLoveContext =
-  ## Returns the NimLoveContext. If the NimLoveContext is not initialized \
-  ## it throws a NimBrokenHeartError.
-  ## This proc is used to access the NimLoveContext from other procs.
-  if not nimLoveContext.isSome:
-    raise NimBrokenHeartError.newException(
-      "NimLoveContext not initialized. Call setupNimLove() first."
-    )
-  return nimLoveContext.get
+## Expose functions some functions and values from private to the outside world
+let ABSOLUTE_PATH* = ABSOLUTE_PATH
+let setupNimLove*: proc (windowWidth: int, windowHeight: int, windowTitle: string, fullScreen: bool) = setupNimLove
 
 
 var keepRunning = true ## \
@@ -96,16 +106,27 @@ proc setDelayCPUWaste*(value: bool) =
 
 var mouseX, mouseY: int = 0
 var mouseRightClickThisFrame: bool = false
+var mouseLeftClickThisFrame: bool = false
+var mouseMiddleClickThisFrame: bool = false
 proc getMouseX*(): int = return mouseX
 proc getMouseY*(): int = return mouseY
 proc getMouseRightClickThisFrame*(): bool = return mouseRightClickThisFrame
+proc getMouseLeftClickThisFrame*(): bool = return mouseLeftClickThisFrame
+proc getMouseMiddleClickThisFrame*(): bool = return mouseMiddleClickThisFrame
 
-# include all the procs for the nimlove-types
-include nimlove_include/nimlove_context_procs
-include nimlove_include/image_procs
-include nimlove_include/text_procs
-include nimlove_include/sound_procs
-include nimlove_include/file_procs
+
+proc drawText*(x: int, y: int, text: string, size: int = 10, color: colors.Color = White) =
+  # todo: preload fonts of different sizes - this increases performance big time
+  let nimLoveContext = getNimLoveContext()
+  let surface = ttf.renderUtf8Solid(nimLoveContext.font, text, toSdlColor color)
+  let texture = nimLoveContext.renderer.createTextureFromSurface(surface)
+  var d: Rect
+  d.x = cint x
+  d.y = cint y
+  queryTexture(texture, nil, nil, addr(d.w), addr(d.h))
+  nimLoveContext.renderer.copy texture, nil, addr d
+  surface.freeSurface
+  texture.destroy
 
 
 proc runProgramm*(
@@ -165,14 +186,15 @@ proc runProgramm*(
         
         of MouseButtonDown:
           onMouseDown(event.button.x, event.button.y)
-          if event.button.button == sdl2.BUTTON_RIGHT:
-            mouseRightClickThisFrame = true
+          if event.button.button == sdl2.BUTTON_RIGHT: mouseRightClickThisFrame = true
+          if event.button.button == sdl2.BUTTON_LEFT: mouseLeftClickThisFrame = true
+          if event.button.button == sdl2.BUTTON_MIDDLE: mouseMiddleClickThisFrame = true
 
         of MouseMotion:
           onMouseMove(event.motion.x, event.motion.y)
           mouseX = event.motion.x
           mouseY = event.motion.y
-          
+
         else:
           # todo: handle other events
           discard

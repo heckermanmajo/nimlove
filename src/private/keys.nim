@@ -1,49 +1,9 @@
 ## The keys file
 ## included into nimlove.nim file via include
+import sdl2
+import ../nimlove
 
-type NimLoveKey* = enum
-  ## An enum that represents a key on the keyboard.
-  ## Usually used on key events.
-  KEY_A
-  KEY_B
-  KEY_C
-  KEY_D
-  KEY_E
-  KEY_F
-  KEY_G
-  KEY_H
-  KEY_I
-  KEY_J
-  KEY_K
-  KEY_L
-  KEY_M
-  KEY_N
-  KEY_O
-  KEY_P
-  KEY_Q
-  KEY_R
-  KEY_S
-  KEY_T
-  KEY_U
-  KEY_V
-  KEY_W
-  KEY_X
-  KEY_Y
-  KEY_Z
-  KEY_0
-  KEY_1
-  KEY_2
-  KEY_3
-  KEY_4
-  KEY_5
-  KEY_6
-  KEY_7
-  KEY_8
-  KEY_9
-  KEY_SPACE
-  KEY_ESCAPE
-
-func sdlScancodeToNimLoveKeyEnum(scancode: Scancode): NimLoveKey =
+func sdlScancodeToNimLoveKeyEnum*(scancode: Scancode): NimLoveKey =
   case scancode
   of SDL_SCANCODE_A: KEY_A
   of SDL_SCANCODE_B: KEY_B
