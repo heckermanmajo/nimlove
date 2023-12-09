@@ -56,5 +56,5 @@ task git, "commit changes":
   let args = commandLineParams()
   let lastArg = args.len - 1
   let arg = args[lastArg]
-  exec ("git commit -m \"$(date)" & arg & "\" ")
+  exec ("git commit -m \""& arg & "\" ")
   exec "git push"
