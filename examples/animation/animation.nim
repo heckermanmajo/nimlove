@@ -53,6 +53,7 @@ var skeletonAnimation = newAnimation(
 
 var z_pos = 400.0
 
+
 nimlove.runProgramm proc(delta_time: float) =
   animation.draw(x=0,y=0)
   zombieAnimation.draw(x=0,y=400)

@@ -1,9 +1,87 @@
-# import the offical nim sdl2 wrapper package
-# make sure to have sdl2 installed on your system
+## Nimlove 0.1
+## 
+## @Author:  Marvin Knapp-Tietz
+## 
+## Nimlove is a simple 2D game library for nim inspired by the love2d for lua.
+## But it is much simpler.
+## 
+## If you want to go crazy use sdl2, but if you want get started quickly
+## and do some fun game-dev in nim, nimlove is for you.
+## 
+## Its focus is simplicity and ease of use (and beeing fast if possible).
+## 
+## - make sure to have sdl2 installed on your system
+## 
+
+# todo: comment everything
+# todo: 
+ 
 # and the nim sdl2 wrapper installed
-import sdl2, sdl2/ttf, sdl2/mixer
+import sdl2 ## import the offical nim sdl2 wrapper package
+import sdl2/[ttf, mixer, image] 
+
 # import standard library modules -> they are part of the nim compiler
-#import std/[options, os, strutils]
+import std/[tables, os, strutils, options]
+
+# defect is a special type of object that is used to throw exceptions
+# defect can on som compiler settings not be catched -> it should crash the program
+type SDLException* = object of Defect
+  ## This exception is thrown when an SDL2 function fails.
+  
+type NimBrokenHeartError* = object of Defect
+  ## This exception is thrown when nimlove has some internal errors
+  ## f.e. the NimLoveContext is not initialized but a proc needs it
+
+let ABSOLUTE_PATH* = os.getAppDir() & "/" ## \
+  ## The absolute path to the directory of the executable. \
+  ## This is neccecary to load images and fonts. Since
+  ## all images and fonts are loaded from the directory of the executable.
+
+template sdlFailIf*(condition: typed, reason: string) =
+  # todo: learn more about templates, so we can describe this function
+  if condition: raise SDLException.newException(
+    reason & ", SDL error " & $getError()
+  )
+
+
+##############################################
+#
+# Colors
+#
+##############################################
+
+type
+  Color* = distinct int
+
+const
+  White* = Color 0xffffff
+  Black* = Color 0
+  Gold* = Color 0xffd700
+  Orange* = Color 0xFFA500
+  Blue* = Color 0x00FFFF
+  Red* = Color 0xFF0000
+  Yellow* = Color 0xFFFF00
+  Pink* = Color 0xFF00FF
+  Gray* = Color 0x808080
+  Green* = Color 0x44FF44
+  Deeppink* = Color 0xFF1493
+
+proc toColor*(r, g, b: int): Color =
+  assert r in 0..255
+  assert g in 0..255
+  assert b in 0..255
+  result = Color (r shl 16) or (g shl 8) or b
+
+proc toSdlColor*(x: Color): sdl2.Color {.inline.} =
+  let x = x.int
+  result = color(x shr 16 and 0xff, x shr 8 and 0xff, x and 0xff, 0)
+
+
+##############################################
+#
+# Keys
+#
+##############################################
 
 type NimLoveKey* = enum
   ## An enum that represents a key on the keyboard.
@@ -46,13 +124,217 @@ type NimLoveKey* = enum
   KEY_9
   KEY_SPACE
   KEY_ESCAPE
+  KEY_ARROW_UP
+  KEY_ARROW_DOWN
+  KEY_ARROW_LEFT
+  KEY_ARROW_RIGHT
+  KEY_CTRL
+  KEY_SHIFT
+  KEY_ALT
+  KEY_TAB
+  KEY_ENTER
+  KEY_BACKSPACE
+  KEY_CAPSLOCK
+  KEY_F1
+  KEY_F2
+  KEY_F3
+  KEY_F4
+  KEY_F5
+  KEY_F6
+  KEY_F7
+  KEY_F8
+  KEY_F9
+  KEY_F10
+  KEY_F11
+  KEY_F12
+  KEY_DELETE
+  KEY_INSERT
+  KEY_UNKNOWN
 
-import private/keys
-import nimlove/colors
-import private/nimlove_context
-import private/core
+
+proc sdlScancodeToNimLoveKeyEnum*(scancode: Scancode): NimLoveKey =
+  case scancode
+  of SDL_SCANCODE_A: KEY_A
+  of SDL_SCANCODE_B: KEY_B
+  of SDL_SCANCODE_C: KEY_C
+  of SDL_SCANCODE_D: KEY_D
+  of SDL_SCANCODE_E: KEY_E
+  of SDL_SCANCODE_F: KEY_F
+  of SDL_SCANCODE_G: KEY_G
+  of SDL_SCANCODE_H: KEY_H
+  of SDL_SCANCODE_I: KEY_I
+  of SDL_SCANCODE_J: KEY_J
+  of SDL_SCANCODE_K: KEY_K
+  of SDL_SCANCODE_L: KEY_L
+  of SDL_SCANCODE_M: KEY_M
+  of SDL_SCANCODE_N: KEY_N
+  of SDL_SCANCODE_O: KEY_O
+  of SDL_SCANCODE_P: KEY_P
+  of SDL_SCANCODE_Q: KEY_Q
+  of SDL_SCANCODE_R: KEY_R
+  of SDL_SCANCODE_S: KEY_S
+  of SDL_SCANCODE_T: KEY_T
+  of SDL_SCANCODE_U: KEY_U
+  of SDL_SCANCODE_V: KEY_V
+  of SDL_SCANCODE_W: KEY_W
+  of SDL_SCANCODE_X: KEY_X
+  of SDL_SCANCODE_Y: KEY_Y
+  of SDL_SCANCODE_Z: KEY_Z
+  of SDL_SCANCODE_0: KEY_0
+  of SDL_SCANCODE_1: KEY_1
+  of SDL_SCANCODE_2: KEY_2
+  of SDL_SCANCODE_3: KEY_3
+  of SDL_SCANCODE_4: KEY_4
+  of SDL_SCANCODE_5: KEY_5
+  of SDL_SCANCODE_6: KEY_6
+  of SDL_SCANCODE_7: KEY_7
+  of SDL_SCANCODE_8: KEY_8
+  of SDL_SCANCODE_9: KEY_9
+  of SDL_SCANCODE_SPACE: KEY_SPACE
+  of SDL_SCANCODE_ESCAPE: KEY_ESCAPE
+  of SDL_SCANCODE_UP: KEY_ARROW_UP
+  of SDL_SCANCODE_DOWN: KEY_ARROW_DOWN
+  of SDL_SCANCODE_LEFT: KEY_ARROW_LEFT
+  of SDL_SCANCODE_RIGHT: KEY_ARROW_RIGHT
+  of SDL_SCANCODE_LCTRL: KEY_CTRL
+  of SDL_SCANCODE_RCTRL: KEY_CTRL
+  of SDL_SCANCODE_LSHIFT: KEY_SHIFT
+  of SDL_SCANCODE_RSHIFT: KEY_SHIFT
+  of SDL_SCANCODE_LALT: KEY_ALT
+  of SDL_SCANCODE_RALT: KEY_ALT
+  of SDL_SCANCODE_TAB: KEY_TAB
+  of SDL_SCANCODE_RETURN: KEY_ENTER
+  of SDL_SCANCODE_BACKSPACE: KEY_BACKSPACE
+  of SDL_SCANCODE_CAPSLOCK: KEY_CAPSLOCK
+  of SDL_SCANCODE_F1: KEY_F1
+  of SDL_SCANCODE_F2: KEY_F2
+  of SDL_SCANCODE_F3: KEY_F3
+  of SDL_SCANCODE_F4: KEY_F4
+  of SDL_SCANCODE_F5: KEY_F5
+  of SDL_SCANCODE_F6: KEY_F6
+  of SDL_SCANCODE_F7: KEY_F7
+  of SDL_SCANCODE_F8: KEY_F8
+  of SDL_SCANCODE_F9: KEY_F9
+  of SDL_SCANCODE_F10: KEY_F10
+  of SDL_SCANCODE_F11: KEY_F11
+  of SDL_SCANCODE_F12: KEY_F12
+  of SDL_SCANCODE_DELETE: KEY_DELETE
+  of SDL_SCANCODE_INSERT: KEY_INSERT
+  else:
+    echo "unknown key: ", $scancode
+    KEY_UNKNOWN
 
 
+##############################################
+#
+# NimLoveContext
+#
+##############################################
+
+
+type NimLoveContext* = object of RootObj
+  ## The NimLoveContext is the main object that
+  ## is passed into the main loop of the program.
+  ## It contains the renderer and window objects
+  ## and provides some helper procedures.
+  renderer*: RendererPtr
+  window*: WindowPtr
+  WindowWidth*: int
+  WindowHeight*: int
+  Title*: string
+  font*: FontPtr
+
+
+proc newNimLoveContext*(
+  WindowWidth: int = 800,
+  WindowHeight: int = 600,
+  Title: string = "NimLove",
+  fullScreen: bool = false,
+): NimLoveContext =
+  # todo: detailed comments
+  result = NimLoveContext()
+  result.WindowWidth = WindowWidth
+  result.WindowHeight = WindowHeight
+  result.Title = Title
+  
+  # image.init(IMG_INIT_PNG)
+  result.window = createWindow(
+    title = "Pixels Canvas",
+    x = SDL_WINDOWPOS_CENTERED,
+    y = SDL_WINDOWPOS_CENTERED,
+    w = WindowWidth.cint,
+    h = WindowHeight.cint,
+    flags = SDL_WINDOW_SHOWN
+  )
+  sdlFailIf result.window.isNil: "window could not be created"
+  result.renderer =  createRenderer(
+    window = result.window,
+    index = -1,
+    flags = Renderer_TargetTexture
+  )
+  # Renderer_Accelerated or Renderer_PresentVsync or
+  sdlFailIf result.renderer.isNil: "renderer could not be created"
+  sdlFailIf(not ttfInit()): "SDL_TTF initialization failed"
+  result.renderer.setDrawColor toSdlColor(Color 0)
+  clear(result.renderer)
+
+  setTitle(result.window, Title)
+  if fullScreen:
+    echo "Try to set game to fullscreen"
+    discard setFullscreen(result.window, SDL_WINDOW_FULLSCREEN_DESKTOP) # todo: handle error
+
+  # load the basic font
+  var font = openFont(cstring(ABSOLUTE_PATH & "font.ttf"), 20)
+  sdlFailIf font.isNil: "font could not be created"
+  #close font
+  result.font = font
+
+  return result
+
+var nimLoveContext: Option[NimLoveContext] = NimLoveContext.none ## \
+    ## The NimLoveContext is a global variable that is initialized by the \
+    ## setupNimLove() proc. It is used by the other procs to access the \
+    ## SDL2 context. It is not exported -> lack of asterisk.
+    ## This way we hide the SDL2 context from the user and make it easier \
+    ## to use the library.
+
+proc getNimLoveContext*(): NimLoveContext =
+  ## Returns the NimLoveContext. If the NimLoveContext is not initialized \
+  ## it throws a NimBrokenHeartError.
+  ## This proc is used to access the NimLoveContext from other procs.
+  if not nimLoveContext.isSome:
+    raise NimBrokenHeartError.newException(
+      "NimLoveContext not initialized. Call setupNimLove() first."
+    )
+  return nimLoveContext.get
+
+# https://stackoverflow.com/questions/33393528/how-to-get-screen-size-in-sdl
+
+proc setupNimLove*(
+    windowWidth: int = 800,
+    windowHeight: int = 600,
+    windowTitle: string = "NimLove",
+    fullScreen: bool = false,
+  ) =
+  # set global nimLoveContext
+  echo "setupNimLove"
+  nimLoveContext = newNimLoveContext(
+    WindowWidth = windowWidth,
+    WindowHeight = windowHeight,
+    Title = windowTitle,
+    fullScreen = fullScreen,
+  ).some
+
+
+##############################################
+#
+# Init SDL2
+#
+##############################################
+
+sdlFailIf(not sdl2.init(INIT_EVERYTHING)): "SDL2 initialization failed"
+
+## audio values 
 # todo: comment
 var audio_rate : cint
 var audio_format : uint16
@@ -65,18 +347,11 @@ sdlFailIf(
 )
 
 
-# includes just paste the content of the included file into the current file
-# import doees import another file and makes it available as a module
-# so the private symbols are not visible, the private symbols on inlcude
-# are visible
-# IMPORANT: We include the types before we include the procs or do
-# anything else. This way all types are available below.
-
-
-## Expose functions some functions and values from private to the outside world
-let ABSOLUTE_PATH* = ABSOLUTE_PATH
-let setupNimLove*: proc (windowWidth: int, windowHeight: int, windowTitle: string, fullScreen: bool) = setupNimLove
-
+##############################################
+#
+# Internal running values
+#
+##############################################
 
 var keepRunning = true ## \
   ## Set to false to stop the main loop of the program.\
@@ -104,19 +379,46 @@ proc setDelayCPUWaste*(value: bool) =
   delayCPUWaste = value
 
 
+
 var mouseX, mouseY: int = 0
 var mouseRightClickThisFrame: bool = false
 var mouseLeftClickThisFrame: bool = false
 var mouseMiddleClickThisFrame: bool = false
+var mouseScrollUpThisFrame: bool = false
+var mouseScrollDownThisFrame: bool = false
+
 proc getMouseX*(): int = return mouseX
 proc getMouseY*(): int = return mouseY
 proc getMouseRightClickThisFrame*(): bool = return mouseRightClickThisFrame
 proc getMouseLeftClickThisFrame*(): bool = return mouseLeftClickThisFrame
 proc getMouseMiddleClickThisFrame*(): bool = return mouseMiddleClickThisFrame
+proc getMouseScrollUpThisFrame*(): bool = return mouseScrollUpThisFrame
+proc getMouseScrollDownThisFrame*(): bool = return mouseScrollDownThisFrame
 
+##############################################
+#
+# Fonts
+#
+##############################################
 
-proc drawText*(x: int, y: int, text: string, size: int = 10, color: colors.Color = White) =
+var fonts: tables.Table[string, FontPtr] = initTable[string, FontPtr]() ##\
+  ## All loaded fonts.
+
+proc loadFont*(path: string, name: string, size: int = 10) =
+  ## Loads a font from a file and stores it in the fonts table.
+  ## Returns the loaded font.
+  let nimLoveContext = getNimLoveContext()
+  let font = openFont(cstring(ABSOLUTE_PATH & "font.ttf"), 20)
+  sdlFailIf font.isNil: "font could not be created"
+  fonts[name] = font
+
+proc fontExists(name: string): bool =
+  ## Returns true if a font with the given name exists.
+  return fonts.hasKey(name)
+
+proc drawText*(x: int, y: int, text: string, size: int = 10, color: Color = White) =
   # todo: preload fonts of different sizes - this increases performance big time
+  ## deprecated: use drawText() beneath instead
   let nimLoveContext = getNimLoveContext()
   let surface = ttf.renderUtf8Solid(nimLoveContext.font, text, toSdlColor color)
   let texture = nimLoveContext.renderer.createTextureFromSurface(surface)
@@ -128,13 +430,253 @@ proc drawText*(x: int, y: int, text: string, size: int = 10, color: colors.Color
   surface.freeSurface
   texture.destroy
 
+let DEFAULT_FONT = ""
+
+proc drawText*(text: string, x: int, y: int, fontName:string=DEFAULT_FONT, color: Color = White) =
+  let nimLoveContext = getNimLoveContext()
+  let fontToUse = if fontName == DEFAULT_FONT: nimLoveContext.font else: fonts[fontName]
+  let surface = ttf.renderUtf8Solid(fontToUse, text, toSdlColor color)
+  let texture = nimLoveContext.renderer.createTextureFromSurface(surface)
+  var d: Rect
+  d.x = cint x
+  d.y = cint y
+  queryTexture(texture, nil, nil, addr(d.w), addr(d.h))
+  nimLoveContext.renderer.copy texture, nil, addr d
+  surface.freeSurface
+  texture.destroy
+
+##############################################
+#
+# Image, TextureAtlasTexture, Animation
+#
+##############################################
+
+type NimLoveImage* = ref object
+  ## Simple image object that can be passed into
+  ## the draw procedures and will be drawn on the
+  ## screen.
+  # todo: add source file name
+  texture: TexturePtr
+  width: int
+  height: int
+
+proc newNimLoveImage*(path: string): NimLoveImage =
+  let nimLoveContext = getNimLoveContext()
+  result = NimLoveImage()
+  let surface = load((ABSOLUTE_PATH & path).cstring)
+  result.width = surface.w.int
+  result.height = surface.h.int
+  sdlFailIf surface.isNil: "could not load image " & ABSOLUTE_PATH & path
+  result.texture = nimLoveContext.renderer.createTextureFromSurface(surface)
+  sdlFailIf result.texture.isNil: "could not create texture from image " & path
+  surface.freeSurface
+
+  # add the created image to resource manager 
+
+  return result
+
+proc width*(image: NimLoveImage): int = return image.width
+proc height*(image: NimLoveImage): int = return image.height
+
+proc draw*(
+  image: NimLoveImage,
+  x: int|float,
+  y: int|float,
+  width: int = 0,
+  height: int = 0,
+  angle: float = 0.0,
+  zoom: float = 1.0,
+  alpha: int = 255, # not implemented yet
+  start_drawing_x: int = 0,
+  start_drawing_y: int = 0,
+  end_drawing_x: int = 0,
+  end_drawing_y: int = 0
+) =
+  # todo: just drawing tiles can be achived easier than this
+  #       so create a special proc for that
+  let nimLoveContext = getNimLoveContext()
+  var d: Rect
+  d.x =  cint x
+  d.y =  cint y
+  d.w =  if width == 0: image.width.cint else: cint width
+  d.h =  if height == 0: image.height.cint else: cint height
+
+  assert d.w > 0 and d.h > 0, "width and height must be > 0"
+  assert zoom > 0.3, "zoom must be > 0.0"
+  assert zoom < 4.0, "zoom must be < 10.0"
+  assert angle >= 0.0 and angle <= 360.0, "angle must be between 0.0 and 360.0"
+
+  if zoom != 1.0:
+    d.w = (d.w.float * zoom).cint
+    d.h = (d.h.float * zoom).cint
+
+  var imagePartRect: Rect ##  display only part of the image
+  imagePartRect.x = if start_drawing_x == 0: 0 else: cint start_drawing_x
+  imagePartRect.y = if start_drawing_y == 0: 0 else: cint start_drawing_y
+  imagePartRect.w = if end_drawing_x == 0: image.width.cint else: cint end_drawing_x
+  imagePartRect.h = if end_drawing_y == 0: image.height.cint else: cint end_drawing_y
+
+  # apply alpha blend mode
+
+  nimLoveContext.renderer.copyEx image.texture, addr imagePartRect, addr d, angle.cdouble, nil, SDL_FLIP_NONE
+
+type TextureAtlasTexture* = ref object
+  ## A texture that is part of a texture atlas.
+  ## if you pass in this into the draw procedures
+  ## it will be drawn on the screen.
+  image: NimLoveImage
+  textureStartX: int
+  textureStartY: int
+  textureWidth: int
+  textureHeight: int
+
+proc newTextureAtlasTexture*(
+  image: NimLoveImage,
+  textureStartX: int,
+  textureStartY: int,
+  textureWidth: int,
+  textureHeight: int
+): TextureAtlasTexture =
+  ## Create a new texture atlas texture.
+  var result = TextureAtlasTexture()
+  result.image = image
+  # todo: check if the texture is big enough
+  if textureStartX < 0 or textureStartY < 0 or textureWidth < 0 or textureHeight < 0:
+    raise newException(NimBrokenHeartError, "Texture atlas texture parameters must be positive.")
+  if textureStartX + textureWidth > image.width or textureStartY + textureHeight > image.height:
+    raise newException(NimBrokenHeartError, "Texture atlas texture parameters must be smaller than the image.")
+  result.textureStartX = textureStartX
+  result.textureStartY = textureStartY
+  result.textureWidth = textureWidth
+  result.textureHeight = textureHeight
+  return result
+
+proc draw*(tat: TextureAtlasTexture, x: int,y: int, zoom: float = 1, angle: float = 0) =
+  ## Render the texture atlas texture on the screen.
+  draw tat.image, x, y, tat.textureWidth, tat.textureHeight, angle, zoom, 255, tat.textureStartX, tat.textureStartY, tat.textureWidth, tat.textureHeight
+
+type Animation = ref object
+  ## This is the animation object that is mapped 1:1 to the
+  ## animated game object.
+  frames: seq[TextureAtlasTexture]
+  currentFrame: int
+  frameTime: float
+  currentFrameTime: float
+  loop: bool
+
+proc newAnimation*(
+  frames: seq[TextureAtlasTexture],
+  frameTime: float = 0.25,
+  loop: bool = true
+): Animation =
+  ## Create a new animation object.
+  var result = Animation()
+  result.frames = frames
+  result.currentFrame = 0
+  result.frameTime = frameTime
+  result.currentFrameTime = 0.0
+  result.loop = loop
+  return result
+
+proc draw*(animation: Animation, x: int, y: int, zoom: float = 1, angle: float = 0) =
+  ## Display the current frame of the animation.
+  #echo "drawing frame ", animation.currentFrame
+  draw animation.frames[animation.currentFrame], x, y, zoom, angle
+
+proc progress*(animation: var Animation, delta_time: float) =
+  assert animation.frames.len > 0
+  animation.currentFrameTime += delta_time
+  if animation.currentFrameTime > animation.frameTime:
+    animation.currentFrameTime -= animation.frameTime
+    animation.currentFrame += 1
+    if animation.currentFrame >= animation.frames.len:
+      if animation.loop:
+        animation.currentFrame = 0
+      else:
+        animation.currentFrame = animation.frames.len - 1
+  if animation.currentFrame > animation.frames.len - 1:
+    animation.currentFrame = animation.frames.len - 1
+
+
+proc readLineOfTextureAtlas*(
+  fromImage: NimLoveImage,
+  num: int,
+  widthPX: int,
+  heigthPX: int,
+  rowNumber: int = 0,
+  startPosition: int = 0
+  ): seq[TextureAtlasTexture] =
+  var result: seq[TextureAtlasTexture] = @[]
+  for i in 0..num-1:
+    result.add(
+      newTextureAtlasTexture(
+        fromImage,
+        i*widthPX + startPosition * widthPX,
+        rowNumber*heigthPX,
+        widthPX,
+        heigthPX
+      )
+    )
+  return result
+
+##############################################
+#
+# Sound
+#
+##############################################
+
+type NimLoveSound* = object
+  soundFilePointerOgg: MusicPtr
+  soundFilePointerWav: ChunkPtr
+  soundFileType: string
+
+# mixer.freeChunk(sound) #clear wav
+#mixer.freeMusic(sound2) #clear ogg
+#mixer.closeAudio()
+
+proc newNimLoveSound*(filename: string): NimLoveSound =
+  let nimLoveContext = getNimLoveContext() #  not used yet
+  result = NimLoveSound()
+  let path = ABSOLUTE_PATH & filename
+  if filename.endsWith(".wav"):
+    # todo: check that file exists
+    # todo: use absolute path and remnid that file needs to be in the same folder as the executable
+    result.soundFileType = "wav"
+    result.soundFilePointerWav = mixer.loadWAV(path.cstring())
+    if isNil(result.soundFilePointerWav):
+      raise NimBrokenHeartError.newException("Unable to load sound file (.wav), error occured while loading")
+  elif filename.endsWith(".ogg"):
+    # todo: check that file exists
+    # todo: use absolute path and remnid that file needs to be in the same folder as the executable
+    result.soundFileType = "ogg"
+    result.soundFilePointerOgg = mixer.loadMUS(path.cstring())
+    if isNil(result.soundFilePointerOgg):
+      raise NimBrokenHeartError.newException("Unable to load sound file (.ogg), error occured while loading: " & path)
+  else:
+    raise NimBrokenHeartError.newException("Unable to load sound file, only wav and ogg are supported")
+
+
+proc play*(sound: NimLoveSound): cint =
+  let nimLoveContext = getNimLoveContext() #  not used yet
+  if sound.soundFileType == "wav":
+    result = mixer.playChannel(-1.cint, sound.soundFilePointerWav, 0.cint)
+  elif sound.soundFileType == "ogg":
+    result = mixer.playMusic(sound.soundFilePointerOgg, 0.cint)
+  else:
+    raise NimBrokenHeartError.newException("Unable to play sound file, only wav and ogg are supported")
+  if result == -1:
+    raise NimBrokenHeartError.newException("Unable to play sound file, error occured while playing")
+
+##############################################
+#
+# MAIN - LOOP
+#
+##############################################
 
 proc runProgramm*(
   onUpdate: proc(deltaTime: float) {.closure.},
   onKeyDown: proc(key: NimLoveKey) {.closure.} = proc(key: NimLoveKey) = discard,
   onKeyUp: proc(key: NimLoveKey) {.closure.} = proc(key: NimLoveKey) = discard,
-  onKeyPressed: proc(key: NimLoveKey) {.closure.} = proc(key: NimLoveKey) = discard,
-  onKeyReleased: proc(key: NimLoveKey) {.closure.} = proc(key: NimLoveKey) = discard,
   onMouseDown: proc(x, y: int) {.closure.} = proc(x, y: int) = discard,
   onMouseUp: proc(x, y: int) {.closure.} = proc(x, y: int) = discard,
   onMouseMove: proc(x, y: int) {.closure.} = proc(x, y: int) = discard,
@@ -164,13 +706,20 @@ proc runProgramm*(
     now = newNow
 
     mouseRightClickThisFrame = false
+    mouseLeftClickThisFrame = false
+    mouseMiddleClickThisFrame = false
+    mouseScrollUpThisFrame = false
+    mouseScrollDownThisFrame = false
 
     var event = defaultEvent
     while pollEvent(event):
+
       case event.kind
+
         of QuitEvent:
           keepRunning = false
           break
+
         of KeyDown:
           onKeyDown(sdlScancodeToNimLoveKeyEnum(event.key.keysym.scancode))
           if event.key.keysym.scancode == SDL_SCANCODE_ESCAPE:
@@ -182,7 +731,12 @@ proc runProgramm*(
 
         of KeyUp:
           # echo "key up"
-          discard
+          onKeyUp(sdlScancodeToNimLoveKeyEnum(event.key.keysym.scancode)) 
+
+        # keypressed
+        of TextInput:
+          # echo "text input"
+          echo event.text.text
         
         of MouseButtonDown:
           onMouseDown(event.button.x, event.button.y)
@@ -190,18 +744,27 @@ proc runProgramm*(
           if event.button.button == sdl2.BUTTON_LEFT: mouseLeftClickThisFrame = true
           if event.button.button == sdl2.BUTTON_MIDDLE: mouseMiddleClickThisFrame = true
 
+        of MouseButtonUp:
+          onMouseUp(event.button.x, event.button.y)
+
         of MouseMotion:
           onMouseMove(event.motion.x, event.motion.y)
           mouseX = event.motion.x
           mouseY = event.motion.y
 
+        of MouseWheel:
+          if event.wheel.y > 0: 
+            mouseScrollUpThisFrame = true
+            onMouseScrollUp()
+          if event.wheel.y < 0: 
+            mouseScrollDownThisFrame = true
+            onMouseScrollDown()
+
         else:
           # todo: handle other events
           discard
 
-
     onUpdate deltaTime  # the users update function for each tick
-   
    
     # draw fps
     # todo: text should be the first parameter

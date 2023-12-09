@@ -1,5 +1,4 @@
 import ../../src/nimlove as nimlove
-import ../../src/nimlove/image
 
 import std/tables
 

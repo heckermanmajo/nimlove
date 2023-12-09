@@ -15,6 +15,8 @@ nimlove.setupNimLove(
   fullScreen = false,
 )
 
+nimlove.setDelayCPUWaste false # max fps
+
 var song = newNimLoveSound("song.ogg")
 discard song.play()
 
@@ -84,7 +86,7 @@ proc onUpdate(deltaTime: float) =
 
 
 
-  if getFPS() > 60 and false: # disable for now
+  if getFPS() > 60:
     let max = (1000 * deltaTime).int
     for i in 0..max:
       objects.add SimpleObject(

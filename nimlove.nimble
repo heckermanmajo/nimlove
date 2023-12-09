@@ -1,3 +1,5 @@
+import std / [os, strformat]
+
 # Package
 
 version       = "0.0.1"
@@ -10,30 +12,49 @@ srcDir        = "src"
 # Dependencies
 
 requires "nim >= 1.6.0"
-requires "sdl2"
+requires "sdl2"  # nims offical sdl2 wrapper
 
-task game, "examples/game":
-  exec "nim -r c ./examples/game/game.nim"
-  exec "rm ./examples/game/game"
+# tasks
 
-task animation, "examples/animation":
-  exec "nim -r c ./examples/animation/animation.nim"
-  exec "rm ./examples/animation/animation"
 
-task tiles, "examples/tiles":
-  exec "nim -r c ./examples/tiles/tiles.nim"
-  exec "rm ./examples/tiles/tiles"
+let runnableExamples = @[
+  "game",
+  "animation",
+  "tiles",
+  "mouse",
+  "performance"
+]
 
-task mouse , "examples/mouse":
-  exec "nim -r c ./examples/mouse/mouse.nim"
-  exec "rm ./examples/mouse/mouse"
-  
+task r, "run the game":
+  # get 3rd argument
+  echo &"my task {commandLineParams()}"
+  let args = commandLineParams()
+  let lastArg = args.len - 1
+  let arg = args[lastArg]
+  # check if argument is in examples
+  if arg in runnableExamples:
+    exec "nim -r c ./examples/" & arg & "/" & arg & ".nim"
+    exec "rm ./examples/" & arg & "/" & arg
+  else:
+    echo "Please specify an example to run"
+    echo "Available examples:"
+    for example in runnableExamples:
+      echo "  " & example
+
 task compall , "compile all examples":
-  exec "nim c ./examples/game/game.nim"
-  exec "rm ./examples/game/game"
-  exec "nim c ./examples/animation/animation.nim"
-  exec "rm ./examples/animation/animation"
-  exec "nim c ./examples/tiles/tiles.nim"
-  exec "rm ./examples/tiles/tiles"
-  exec "nim c ./examples/mouse/mouse.nim"
-  exec "rm ./examples/mouse/mouse"
+  for example in runnableExamples:
+    exec "nim c ./examples/" & example & "/" & example & ".nim"
+    exec "rm ./examples/" & example & "/" & example
+
+task rall, "run all examples":
+  for example in runnableExamples:
+    exec "nim -r c ./examples/" & example & "/" & example & ".nim"
+    exec "rm ./examples/" & example & "/" & example
+
+task git, "commit changes":
+  exec "git add ."
+  let args = commandLineParams()
+  let lastArg = args.len - 1
+  let arg = args[lastArg]
+  exec ("git commit -m \"$(date)" & arg & "\" ")
+  exec "git push origin master"

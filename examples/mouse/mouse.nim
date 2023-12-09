@@ -1,5 +1,5 @@
 import ../../src/nimlove as nimlove
-import ../../src/nimlove/colors
+import ../../src/lovemodules/screenlogger
 
 const WindowWidth = 800
 const WindowHeight = 600
@@ -17,15 +17,28 @@ nimlove.runProgramm(
   
     if nimlove.getMouseRightClickThisFrame():
       echo "Right mouse button clicked"
-      # check collsion of button, and iff coliied do xyz
-    #if Button("",123,124):
-    #    echo "Button clicked"
+      log "Right mouse button clicked"
 
+    if nimlove.getMouseLeftClickThisFrame():
+      echo "Left mouse button clicked"
+      log "Left mouse button clicked"
+
+    if nimlove.getMouseMiddleClickThisFrame():
+      echo "Middle mouse button clicked"
+      log "Middle mouse button clicked"
+
+    if nimlove.getMouseScrollUpThisFrame():
+      echo "Mouse scroll up"
+      log "Mouse scroll up"
+
+    if nimlove.getMouseScrollDownThisFrame():
+      echo "Mouse scroll down"
+      log "Mouse scroll down"
+
+    drawLogs 10, 60
   ,
   onKeyDown= proc(key: NimLoveKey) = discard,
   onKeyUp= proc(key: NimLoveKey) = discard,
-  onKeyPressed=proc(key: NimLoveKey) = discard,
-  onKeyReleased= proc(key: NimLoveKey) = discard,
   onMouseDown= proc(x, y: int) = discard,
   onMouseUp= proc(x, y: int) = discard,
   onMouseMove= proc(x, y: int) = 
