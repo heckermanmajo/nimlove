@@ -14,7 +14,12 @@
 ## 
 
 # todo: comment everything
-# todo: 
+# todo: add saving images 
+# todo: remove some pixels by color
+# todo: gets some pixels of images, set some pixels of images-> for exmaple to
+#       allow the same unit-type with different colors
+# create a editableImage type -> that cannot be drawn but can be edited
+# todo: draw a pixel, line, rect, circle, triangle, procs
  
 # and the nim sdl2 wrapper installed
 import sdl2 ## import the offical nim sdl2 wrapper package
@@ -24,7 +29,7 @@ import sdl2/[ttf, mixer, image]
 import std/[tables, os, strutils, options]
 
 # defect is a special type of object that is used to throw exceptions
-# defect can on som compiler settings not be catched -> it should crash the program
+# defect can on some compiler settings not be catched -> it should crash the program
 type SDLException* = object of Defect
   ## This exception is thrown when an SDL2 function fails.
   

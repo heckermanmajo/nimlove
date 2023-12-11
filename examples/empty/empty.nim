@@ -14,8 +14,6 @@ nimlove.runProgramm(
   onUpdate= proc(deltaTime: float) = discard,
   onKeyDown= proc(key: NimLoveKey) = discard,
   onKeyUp= proc(key: NimLoveKey) = discard,
-  onKeyPressed=proc(key: NimLoveKey) = discard,
-  onKeyReleased= proc(key: NimLoveKey) = discard,
   onMouseDown= proc(x, y: int) = discard,
   onMouseUp= proc(x, y: int) = discard,
   onMouseMove= proc(x, y: int) = discard,
