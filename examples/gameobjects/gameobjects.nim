@@ -4,8 +4,6 @@ import ../../src/lovemodules/screenlogger as slogger
 import gameobjectcontainer
 import soldier
 
-
-
 const WindowWidth = 800
 const WindowHeight = 600
 

@@ -13,10 +13,12 @@ srcDir        = "src"
 
 requires "nim >= 1.6.0"
 requires "sdl2"  # nims offical sdl2 wrapper
+# todo: add astar
 
 # tasks
 
 
+# todo: just read the examples folder
 let runnableExamples = @[
   "game",
   "animation",
@@ -25,7 +27,8 @@ let runnableExamples = @[
   "performance",
   "pixel",
   "empty",
-  "gameobjects"
+  "gameobjects",
+  "button"
 ]
 
 task r, "run the game":

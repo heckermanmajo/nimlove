@@ -13,13 +13,12 @@
 ## - make sure to have sdl2 installed on your system
 ## 
 
-# todo: comment everything
-# todo: add saving images 
-# todo: remove some pixels by color
-# todo: gets some pixels of images, set some pixels of images-> for exmaple to
-#       allow the same unit-type with different colors
-# create a editableImage type -> that cannot be drawn but can be edited
-# todo: draw a pixel, line, rect, circle, triangle, procs
+# TODO: comment everything
+# TODO: add saving images 
+# TODO: draw a pixel, line, rect, circle, triangle, procs
+# TODO: add debug logs that can be turned on and off -> into a nimlove.log file
+# TODO: set mutliple cursors
+# TODO: load multiple fonts by string
  
 # and the nim sdl2 wrapper installed
 import sdl2 ## import the offical nim sdl2 wrapper package
@@ -375,6 +374,7 @@ proc getFPS*(): float =
   ## calculated by the runProgramm() proc -> main loop
   return fps
 
+var thisFrameWasTenthOfASecond : int = 0  ## from 1 to 10
 
 var delayCPUWaste = true
 proc setDelayCPUWaste*(value: bool) =
@@ -383,6 +383,12 @@ proc setDelayCPUWaste*(value: bool) =
   ## from using 100% CPU for no work.
   delayCPUWaste = value
 
+var sleptMilisecondsPerSecond = 0.0
+var sleptMilisecondsPerSecondCounter = 0
+proc getSleptMilisecondsPerSecond*(): float =
+  ## Returns the number of miliseconds the program slept in the last second.
+  ## @see setDelayCPUWaste()
+  return sleptMilisecondsPerSecond
 
 
 var mouseX, mouseY: int = 0
@@ -399,6 +405,10 @@ proc getMouseLeftClickThisFrame*(): bool = return mouseLeftClickThisFrame
 proc getMouseMiddleClickThisFrame*(): bool = return mouseMiddleClickThisFrame
 proc getMouseScrollUpThisFrame*(): bool = return mouseScrollUpThisFrame
 proc getMouseScrollDownThisFrame*(): bool = return mouseScrollDownThisFrame
+
+proc mouseIsOver*(x: int, y: int, width: int, height: int): bool =
+  ## Returns true if the mouse is over the given rectangle.
+  return mouseX >= x and mouseX <= x + width and mouseY >= y and mouseY <= y + height
 
 ##############################################
 #
@@ -449,6 +459,22 @@ proc drawText*(text: string, x: int, y: int, fontName:string=DEFAULT_FONT, color
   nimLoveContext.renderer.copy texture, nil, addr d
   surface.freeSurface
   texture.destroy
+
+type Width = int
+type Height = int
+
+proc getTextSizeInPixel*(text: string): (Width, Height) =
+  # int TTF_SizeText(TTF_Font *font, const char *text, int *w, int *h)
+  let nimLoveContext = getNimLoveContext()
+  var w, h: cint
+  let res = sizeText(nimLoveContext.font, text.cstring, addr w, addr h)
+  sdlFailIf res != 0, "could not get text size"
+  return (w.int, h.int)
+
+proc displayDebugInfo*() = 
+  drawText("FPS: " & $getFPS(), 0, 0)
+  drawText("Slept ms: " & $getSleptMilisecondsPerSecond(), 0, 20)
+  drawText("Mouse: " & $getMouseX() & ", " & $getMouseY(), 0, 40)
 
 ##############################################
 #
@@ -537,6 +563,9 @@ type TextureAtlasTexture* = ref object
   textureStartY: int
   textureWidth: int
   textureHeight: int
+
+proc getTextureAtlasTextureSize*(tat: TextureAtlasTexture): (int, int) =
+  return (tat.textureWidth, tat.textureHeight)
 
 proc newTextureAtlasTexture*(
   image: NimLoveImage,
@@ -837,6 +866,24 @@ proc play*(sound: NimLoveSound): cint =
   if result == -1:
     raise NimBrokenHeartError.newException("Unable to play sound file, error occured while playing")
 
+# If we focus for example a text-field, other 
+# handler should not consume the input event
+# these functions help to manage input in case 
+# of ui
+var currentKeyEventWasConsumedVar = false
+var currentMouseEventWasConsumedVar = false
+proc setCurrentKeyEventAsConsumed*() =
+  currentKeyEventWasConsumedVar = false
+proc setCurrentMouseEventAsConsumed*() =
+  currentMouseEventWasConsumedVar = true
+proc currentKeyEventWasConsumed*(): bool =
+  return currentKeyEventWasConsumedVar
+proc currentMouseEventWasConsumed*(): bool =
+  return currentMouseEventWasConsumedVar
+
+
+
+
 ##############################################
 #
 # MAIN - LOOP
@@ -860,12 +907,33 @@ proc runProgramm*(
 
   let nimLoveContext = getNimLoveContext()
   var now = getTicks()
-
+  thisFrameWasTenthOfASecond = 1 #  start the system with 1
   while keepRunning:
 
     # calculate fps
     frame_counter += 1
     time_in_ms += (getTicks() - now).float
+    if time_in_ms > 100 and thisFrameWasTenthOfASecond == 1:
+      thisFrameWasTenthOfASecond = 2
+    elif time_in_ms > 200 and thisFrameWasTenthOfASecond == 2:
+      thisFrameWasTenthOfASecond = 3
+    elif time_in_ms > 300 and thisFrameWasTenthOfASecond == 3:
+      thisFrameWasTenthOfASecond = 4
+    elif time_in_ms > 400 and thisFrameWasTenthOfASecond == 4:
+      thisFrameWasTenthOfASecond = 5
+    elif time_in_ms > 500 and thisFrameWasTenthOfASecond == 5:
+      thisFrameWasTenthOfASecond = 6
+    elif time_in_ms > 600 and thisFrameWasTenthOfASecond == 6:
+      thisFrameWasTenthOfASecond = 7
+    elif time_in_ms > 700 and thisFrameWasTenthOfASecond == 7:
+      thisFrameWasTenthOfASecond = 8
+    elif time_in_ms > 800 and thisFrameWasTenthOfASecond == 8:
+      thisFrameWasTenthOfASecond = 9
+    elif time_in_ms > 900 and thisFrameWasTenthOfASecond == 9:
+      thisFrameWasTenthOfASecond = 10
+    elif time_in_ms < 100 and thisFrameWasTenthOfASecond == 10:
+      thisFrameWasTenthOfASecond = 1
+
     if time_in_ms >= 1000.0:
       fps = frame_counter.float / (time_in_ms / 1000.0)
       time_in_ms = 0.0
@@ -891,6 +959,7 @@ proc runProgramm*(
           break
 
         of KeyDown:
+          currentKeyEventWasConsumedVar = false
           onKeyDown(sdlScancodeToNimLoveKeyEnum(event.key.keysym.scancode))
           if event.key.keysym.scancode == SDL_SCANCODE_ESCAPE:
             keepRunning = false
@@ -901,28 +970,33 @@ proc runProgramm*(
 
         of KeyUp:
           # echo "key up"
+          currentKeyEventWasConsumedVar = false
           onKeyUp(sdlScancodeToNimLoveKeyEnum(event.key.keysym.scancode)) 
 
-        # keypressed
+        # paste?
         of TextInput:
           # echo "text input"
           echo event.text.text
         
         of MouseButtonDown:
+          currentMouseEventWasConsumedVar = false
           onMouseDown(event.button.x, event.button.y)
           if event.button.button == sdl2.BUTTON_RIGHT: mouseRightClickThisFrame = true
           if event.button.button == sdl2.BUTTON_LEFT: mouseLeftClickThisFrame = true
           if event.button.button == sdl2.BUTTON_MIDDLE: mouseMiddleClickThisFrame = true
 
         of MouseButtonUp:
+          currentMouseEventWasConsumedVar = false
           onMouseUp(event.button.x, event.button.y)
 
         of MouseMotion:
+          currentMouseEventWasConsumedVar = false
           onMouseMove(event.motion.x, event.motion.y)
           mouseX = event.motion.x
           mouseY = event.motion.y
 
         of MouseWheel:
+          currentMouseEventWasConsumedVar = false
           if event.wheel.y > 0: 
             mouseScrollUpThisFrame = true
             onMouseScrollUp()
@@ -938,21 +1012,26 @@ proc runProgramm*(
    
     # draw fps
     # todo: text should be the first parameter
-    drawText(
-      0, 0,
-      "FPS: " & $fps,
-      30,
-      White
-    )
+    #drawText(
+    #  0, 0,
+    #  "FPS: " & $fps,
+    #  30,
+   #   White
+   # )
 
     present(nimLoveContext.renderer)
     clear(nimLoveContext.renderer)
     nimLoveContext.renderer.setDrawColor toSdlColor(Green)
     nimLoveContext.renderer.fillRect(nil)
 
-    # todo: add comment
+    # TODO: STH seems wrong here ...
     if delayCPUWaste:
-      if getFPS() > 200.0: delay(1)
+      if getFPS() > 60.0: 
+        delay(1)
+        sleptMilisecondsPerSecondCounter += 1
+      if thisFrameWasTenthOfASecond == 10:
+        sleptMilisecondsPerSecond = sleptMilisecondsPerSecondCounter.float
+        sleptMilisecondsPerSecondCounter = 0
 
   onQuit() # the user can handle the end of the program
 
