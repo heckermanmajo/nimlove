@@ -5,8 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="52fc974e-0fa2-4892-aab9-95c7d9ff372a" name="Changes" comment="tiles, animation, mouse and concept all over the place">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/empty/empty.nim" beforeDir="false" afterPath="$PROJECT_DIR$/examples/empty/empty.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/performance/performance.nim" beforeDir="false" afterPath="$PROJECT_DIR$/examples/performance/performance.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nimlove.nimble" beforeDir="false" afterPath="$PROJECT_DIR$/nimlove.nimble" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/nimlove.nim" beforeDir="false" afterPath="$PROJECT_DIR$/src/nimlove.nim" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -104,6 +104,7 @@
       <workItem from="1702114923189" duration="3928000" />
       <workItem from="1702207257385" duration="2000" />
       <workItem from="1702291278021" duration="599000" />
+      <workItem from="1702477381490" duration="65000" />
     </task>
     <task id="LOCAL-00001" summary="tiles, animation, mouse and concept all over the place">
       <option name="closed" value="true" />

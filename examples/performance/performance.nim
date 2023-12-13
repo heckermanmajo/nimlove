@@ -103,7 +103,7 @@ proc onUpdate(deltaTime: float) =
     obj.draw()
     obj.rotate(deltaTime)
     obj.slow_moving(deltaTime)
-    #obj.changeSize(deltaTime)
+    obj.changeSize(deltaTime)
 
   drawText 500, 0, $objects.len, 35, Red
   let speed = 77.0
