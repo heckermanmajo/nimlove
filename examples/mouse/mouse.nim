@@ -17,23 +17,23 @@ nimlove.runProgramm(
   
     if nimlove.getMouseRightClickThisFrame():
       echo "Right mouse button clicked"
-      log "Right mouse button clicked"
+      slog "Right mouse button clicked"
 
     if nimlove.getMouseLeftClickThisFrame():
       echo "Left mouse button clicked"
-      log "Left mouse button clicked"
+      slog "Left mouse button clicked"
 
     if nimlove.getMouseMiddleClickThisFrame():
       echo "Middle mouse button clicked"
-      log "Middle mouse button clicked"
+      slog "Middle mouse button clicked"
 
     if nimlove.getMouseScrollUpThisFrame():
       echo "Mouse scroll up"
-      log "Mouse scroll up"
+      slog "Mouse scroll up"
 
     if nimlove.getMouseScrollDownThisFrame():
       echo "Mouse scroll down"
-      log "Mouse scroll down"
+      slog "Mouse scroll down"
 
     drawLogs 10, 60
   ,

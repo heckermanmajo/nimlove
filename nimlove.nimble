@@ -23,7 +23,9 @@ let runnableExamples = @[
   "tiles",
   "mouse",
   "performance",
-  "pixel"
+  "pixel",
+  "empty",
+  "gameobjects"
 ]
 
 task r, "run the game":

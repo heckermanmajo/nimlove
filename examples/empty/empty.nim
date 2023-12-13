@@ -6,7 +6,7 @@ const WindowHeight = 600
 nimlove.setupNimLove(
   windowWidth = WindowWidth,
   windowHeight = WindowHeight,
-  windowTitle = "NimLove",
+  windowTitle = "NimLove - empty game test",
   fullScreen = false,
 )
 

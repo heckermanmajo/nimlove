@@ -34,7 +34,7 @@ type SimpleObject = ref object
 
 var objects: seq[SimpleObject] = @[]
 
-for i in 0..100:
+for i in 0..4000:
   objects.add SimpleObject(
     x : rand(0..(WindowWidth-testImage.width)).float,
     y : rand(0..(WindowHeight-testImage.height)).float,
@@ -85,9 +85,8 @@ proc onUpdate(deltaTime: float) =
   )
 
 
-
-  if getFPS() > 60:
-    let max = (1000 * deltaTime).int
+  if getFPS() > 60 and false:
+    let max = (100 * deltaTime).int
     for i in 0..max:
       objects.add SimpleObject(
         x : rand(0..(WindowWidth-testImage.width)).float,

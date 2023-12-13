@@ -5,7 +5,7 @@ import ../nimlove
 
 var logMessages: seq[string] = @[];
 
-proc log*(msg: string) =
+proc slog*(msg: string) =
   logMessages.add(msg)
   if logMessages.len > 10:
     logMessages = logMessages[1..^1]

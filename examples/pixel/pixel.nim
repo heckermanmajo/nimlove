@@ -1,3 +1,10 @@
+##[
+
+  Pixel-Example for NimLove.
+
+  - Manipulate Pixels in an Image
+
+]##
 import ../../src/nimlove as nimlove
 
 const WindowWidth = 800
@@ -10,7 +17,7 @@ nimlove.setupNimLove(
   fullScreen = false,
 )
 
-# 8 x 8
+# 8 x 8 px wide image
 var editableImage:EditableImage = nimlove.newEditableImage("color_test.png")
 let noChange = nimlove.newNimLoveImage("color_test.png")
 
