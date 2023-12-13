@@ -104,7 +104,7 @@ proc onUpdate(deltaTime: float) =
     obj.slow_moving(deltaTime)
     obj.changeSize(deltaTime)
 
-  drawText 500, 0, $objects.len, 35, Red
+  drawText 500, 0, $objects.len, color=Red
   let speed = 77.0
   #if isDown "left":
   #  testImage.x -= speed * deltaTime
@@ -112,7 +112,7 @@ proc onUpdate(deltaTime: float) =
   angle += 45.0 * deltaTime
   if angle > 360.0:
     angle -= 360.0
-  drawText 180, 180, $deltaTime, 35, Red
+  drawText 180, 180, $deltaTime, color=Red
 
 proc onKeyDown(key: NimLoveKey) =
   echo "keyDown: ", $key

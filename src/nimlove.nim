@@ -19,6 +19,7 @@
 # TODO: add debug logs that can be turned on and off -> into a nimlove.log file
 # TODO: set mutliple cursors
 # TODO: load multiple fonts by string
+# TODO: add setBackgroundColor procs
  
 # and the nim sdl2 wrapper installed
 import sdl2 ## import the offical nim sdl2 wrapper package
@@ -423,7 +424,7 @@ proc loadFont*(path: string, name: string, size: int = 10) =
   ## Loads a font from a file and stores it in the fonts table.
   ## Returns the loaded font.
   let nimLoveContext = getNimLoveContext()
-  let font = openFont(cstring(ABSOLUTE_PATH & "font.ttf"), 20)
+  let font = openFont(cstring(ABSOLUTE_PATH & path), size.cint)
   sdlFailIf font.isNil: "font could not be created"
   fonts[name] = font
 
@@ -431,11 +432,17 @@ proc fontExists(name: string): bool =
   ## Returns true if a font with the given name exists.
   return fonts.hasKey(name)
 
-proc drawText*(x: int, y: int, text: string, size: int = 10, color: Color = White) =
+proc drawText*(x: int, y: int, text: string, fontName: string = "", color: Color = White) =
   # todo: preload fonts of different sizes - this increases performance big time
   ## deprecated: use drawText() beneath instead
   let nimLoveContext = getNimLoveContext()
-  let surface = ttf.renderUtf8Solid(nimLoveContext.font, text, toSdlColor color)
+  let font 
+    = if fontName == "": nimLoveContext.font 
+    else: 
+      if not fonts.hasKey(fontName):
+        raise newException(NimBrokenHeartError, "Font " & fontName & " does not exist.")
+      fonts[fontName]
+  let surface = ttf.renderUtf8Solid(font, text, toSdlColor color)
   let texture = nimLoveContext.renderer.createTextureFromSurface(surface)
   var d: Rect
   d.x = cint x
@@ -445,12 +452,15 @@ proc drawText*(x: int, y: int, text: string, size: int = 10, color: Color = Whit
   surface.freeSurface
   texture.destroy
 
-let DEFAULT_FONT = ""
-
-proc drawText*(text: string, x: int, y: int, fontName:string=DEFAULT_FONT, color: Color = White) =
+proc drawText*(text: string, x: int, y: int, fontName:string="", color: Color = White) =
   let nimLoveContext = getNimLoveContext()
-  let fontToUse = if fontName == DEFAULT_FONT: nimLoveContext.font else: fonts[fontName]
-  let surface = ttf.renderUtf8Solid(fontToUse, text, toSdlColor color)
+  let font 
+    = if fontName == "": nimLoveContext.font 
+    else: 
+      if not fonts.hasKey(fontName):
+        raise newException(NimBrokenHeartError, "Font " & fontName & " does not exist.")
+      fonts[fontName]
+  let surface = ttf.renderUtf8Solid(font, text, toSdlColor color)
   let texture = nimLoveContext.renderer.createTextureFromSurface(surface)
   var d: Rect
   d.x = cint x

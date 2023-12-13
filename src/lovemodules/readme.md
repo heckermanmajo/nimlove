@@ -19,3 +19,4 @@ game specific, f.e. UI.
     - outside the window-view
     - collides
 - embedding
+- tiles, chunks and management of them can be added via concepts

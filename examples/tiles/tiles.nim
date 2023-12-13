@@ -32,19 +32,6 @@ let yellowOutline = newTextureAtlasTexture(
 
 # todo: other colors
 
-type
-  
-  Tile = object
-    x, y: int
-
-  Chunk = object
-    tilesAsSequence: seq[seq[Tile]]
-    tilesAsTable: tables.Table[int, tables.Table[int, Tile]]
-
-  Map = object
-    chunksAsSequence: seq[seq[Chunk]]
-    chunksAsTable: tables.Table[int, tables.Table[int, Chunk]]
-
 
 type Camera = object
   x, y: int

@@ -11,6 +11,18 @@ for that we have proto applications.
 
 ## List of examples (not exhaustive)
 
+- SERIALISATION
+- SCENES
+- TEXTINPUT
+- Physics
+- simple pathfinding
+- chunked pathfinding
+- protocol example
+
+-> man kann doch in nim protokoll baisert programmieren
+   mit generics, weil es ja überladung gibt.
+
+
 - game objects with refs and persistance (csv)
 - game objects with strategies
 - different use of all modules

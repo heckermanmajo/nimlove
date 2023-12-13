@@ -28,7 +28,9 @@ let runnableExamples = @[
   "pixel",
   "empty",
   "gameobjects",
-  "button"
+  "button",
+  "font",
+  "protocol"
 ]
 
 task r, "run the game":
