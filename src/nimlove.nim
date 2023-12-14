@@ -79,7 +79,7 @@ proc toColor*(r, g, b: int): Color =
 
 proc toSdlColor*(x: Color): sdl2.Color {.inline.} =
   let x = x.int
-  result = color(x shr 16 and 0xff, x shr 8 and 0xff, x and 0xff, 0)
+  result = sdl2.color(x shr 16 and 0xff, x shr 8 and 0xff, x and 0xff, 0)
 
 
 ##############################################
