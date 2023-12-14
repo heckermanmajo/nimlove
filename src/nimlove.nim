@@ -12,6 +12,8 @@
 ## 
 ## - make sure to have sdl2 installed on your system
 ## 
+## 
+## ADD serialize and deserialize procs for all nimlove types 
 
 # TODO: comment everything
 # TODO: add saving images 
@@ -23,10 +25,10 @@
  
 # and the nim sdl2 wrapper installed
 import sdl2 ## import the offical nim sdl2 wrapper package
-import sdl2/[ttf, mixer, image] 
+import sdl2/[ttf, mixer] 
 
 # import standard library modules -> they are part of the nim compiler
-import std/[tables, os, strutils, options]
+import std/[tables, os, options]
 
 import nimlove/private/keys
 import nimlove/private/colors
@@ -65,22 +67,41 @@ type NimLoveContext* = object of RootObj
   ## is passed into the main loop of the program.
   ## It contains the renderer and window objects
   ## and provides some helper procedures.
-  renderer*: RendererPtr
-  window*: WindowPtr
-  WindowWidth*: int
-  WindowHeight*: int
-  Title*: string
-  font*: FontPtr
+  renderer: RendererPtr
+  window: WindowPtr
+  WindowWidth: int
+  WindowHeight: int
+  Title: string
+  font: FontPtr
+
+proc font*(context: NimLoveContext): FontPtr =
+  ## Returns the default font.
+  ## The default font is used by the drawText() proc.
+  return context.font
+
+proc window*(context: NimLoveContext): WindowPtr =
+  ## Returns the window object.
+  ## Used by image/eimage.
+  return context.window
+
+proc renderer*(context: NimLoveContext): RendererPtr =
+  ## Returns the renderer object.
+  ## Used by image/eimage.
+  return context.renderer
 
 
-proc newNimLoveContext*(
+proc newNimLoveContext(
   WindowWidth: int = 800,
   WindowHeight: int = 600,
   Title: string = "NimLove",
   fullScreen: bool = false,
 ): NimLoveContext =
-  # todo: detailed comments
+  ## Creates new nim love context.
+  ## Called by setupNimLove() proc.
+
   result = NimLoveContext()
+  # https://stackoverflow.com/questions/33393528/how-to-get-screen-size-in-sdl
+  # TODO: if width and height are -1 use the screen size
   result.WindowWidth = WindowWidth
   result.WindowHeight = WindowHeight
   result.Title = Title
@@ -93,8 +114,10 @@ proc newNimLoveContext*(
     w = WindowWidth.cint,
     h = WindowHeight.cint,
     flags = SDL_WINDOW_SHOWN
+
   )
   sdlFailIf result.window.isNil: "window could not be created"
+
   result.renderer =  createRenderer(
     window = result.window,
     index = -1,
@@ -102,8 +125,11 @@ proc newNimLoveContext*(
   )
   # Renderer_Accelerated or Renderer_PresentVsync or
   sdlFailIf result.renderer.isNil: "renderer could not be created"
+
   sdlFailIf(not ttfInit()): "SDL_TTF initialization failed"
+
   result.renderer.setDrawColor toSdlColor(colors.Color 0)
+
   clear(result.renderer)
 
   #setTitle(result.window, Title)
@@ -113,6 +139,7 @@ proc newNimLoveContext*(
 
   # load the basic font
   var font = openFont(cstring(ABSOLUTE_PATH & "font.ttf"), 20)
+
   sdlFailIf font.isNil: "font could not be created"
   #close font
   result.font = font
@@ -136,7 +163,6 @@ proc getNimLoveContext*(): NimLoveContext =
     )
   return nimLoveContext.get
 
-# https://stackoverflow.com/questions/33393528/how-to-get-screen-size-in-sdl
 
 proc setupNimLove*(
     windowWidth: int = 800,

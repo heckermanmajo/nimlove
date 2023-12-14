@@ -1,3 +1,5 @@
+
+
 import sdl2
 ##############################################
 #
@@ -20,6 +22,8 @@ const
   Gray* = Color 0x808080
   Green* = Color 0x44FF44
   Deeppink* = Color 0xFF1493
+
+
 
 proc toColor*(r, g, b: int): Color =
   assert r in 0..255

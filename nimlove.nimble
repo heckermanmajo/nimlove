@@ -30,7 +30,8 @@ let runnableExamples = @[
   "gameobjects",
   "button",
   "font",
-  "protocol"
+  "protocol",
+  "serialisation"
 ]
 
 task r, "run the game":
