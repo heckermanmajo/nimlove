@@ -1,5 +1,5 @@
 import ../../src/nimlove as nimlove
-
+import ../../src/nimlove/[text]
 const WindowWidth = 800
 const WindowHeight = 600
 

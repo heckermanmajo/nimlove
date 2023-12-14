@@ -2,6 +2,7 @@
 ## 
 ## 
 import ../nimlove
+import text
 
 var logMessages: seq[string] = @[];
 

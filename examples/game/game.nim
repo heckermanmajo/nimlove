@@ -1,7 +1,7 @@
 import ../../src/nimlove as nimlove
-
+import ../../src/nimlove/[image, sound, text]
 import std/random
-#import std/sequtils
+
 
 echo nimlove.ABSOLUTE_PATH
 
@@ -15,10 +15,10 @@ nimlove.setupNimLove(
   fullScreen = false,
 )
 
-var song = newNimLoveSound("song.ogg")
+var song = newSound("song.ogg")
 discard song.play()
 
-let testImage: NimLoveImage = newNimLoveImage("mob.png")
+let testImage: Image = newImage("mob.png")
 var pos_x = 100.0
 var angle = 0.0
 
@@ -28,7 +28,7 @@ type SimpleObject = ref object
   width: float
   height: float
   angle: float
-  image: NimLoveImage
+  image: Image
 
 var objects: seq[SimpleObject] = @[]
 

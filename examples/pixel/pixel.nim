@@ -6,6 +6,7 @@
 
 ]##
 import ../../src/nimlove as nimlove
+import ../../src/nimlove/[image]
 
 const WindowWidth = 800
 const WindowHeight = 600
@@ -18,8 +19,8 @@ nimlove.setupNimLove(
 )
 
 # 8 x 8 px wide image
-var editableImage:EditableImage = nimlove.newEditableImage("color_test.png")
-let noChange = nimlove.newNimLoveImage("color_test.png")
+var editableImage:EditableImage = newEditableImage("color_test.png")
+let noChange = newImage("color_test.png")
 
 echo "get the first pixel"
 let pv1:PixelValue  = editableImage.getPixel(0,0)
@@ -50,7 +51,7 @@ echo editableImage.getPixel(4,4)
 editableImage.replaceColor(PixelValue(r:255,g:255,b:255,a:255), PixelValueRed)
 editableImage.replaceColor(PixelValue(r:0,g:0,b:0,a:255), PixelValueBlue)
 
-let i = editableImage.makeNormalImage
+let i = editableImage.makeImageFromEImage
 
 nimlove.runProgramm(
   onUpdate= proc(deltaTime: float) =

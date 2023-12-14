@@ -1,5 +1,7 @@
 
 import ../nimlove
+import image
+import text
 
 type Button = ref object
   x, y, width, height: int
@@ -25,13 +27,13 @@ proc newButton*(defaultTexture, hoverTexture: TextureAtlasTexture,x:int,y:int, z
     result.hoverTexture = hoverTexture
     result.zoom = zoom
     result.text = text
-    let (widthOfText,heightOfText) = nimlove.getTextSizeInPixel(result.text)
+    let (widthOfText,heightOfText) = getTextSizeInPixel(result.text)
     result.textWidth = widthOfText
     result.textHeight = heightOfText
 
 proc updateText*(self:var Button, text: string) = 
     self.text = text
-    let (widthOfText,heightOfText) = nimlove.getTextSizeInPixel(self.text)
+    let (widthOfText,heightOfText) = getTextSizeInPixel(self.text)
     self.textWidth = widthOfText
     self.textHeight = heightOfText
 
@@ -50,7 +52,7 @@ proc drawAndCollectInteraction*(self: Button): ButtonState =
             state.clickedMiddle = true
     else:
         self.defaultTexture.draw(self.x, self.y, self.zoom)
-    let (widthOfText,heightOfText) = nimlove.getTextSizeInPixel(self.text)
+    let (widthOfText,heightOfText) = getTextSizeInPixel(self.text)
     let buttonWidth = (self.width.float * self.zoom).int
     let buttonHeight = (self.height.float * self.zoom).int
     let xPositionRelativeToButton = (buttonWidth - widthOfText) / 2

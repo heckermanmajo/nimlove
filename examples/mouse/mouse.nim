@@ -1,5 +1,5 @@
 import ../../src/nimlove as nimlove
-import ../../src/lovemodules/screenlogger
+import ../../src/nimlove/[screenlogger, text]
 
 const WindowWidth = 800
 const WindowHeight = 600

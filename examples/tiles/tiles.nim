@@ -1,5 +1,5 @@
 import ../../src/nimlove as nimlove
-
+import ../../src/nimlove/[image]
 import std/tables
 
 const WindowWidth = 1900
@@ -12,7 +12,7 @@ nimlove.setupNimLove(
   fullScreen = false,
 )
 
-let tileAtlas = newNimLoveImage("tiles.png")
+let tileAtlas = newImage("tiles.png")
 
 let gray = newTextureAtlasTexture(
   image=tileAtlas,

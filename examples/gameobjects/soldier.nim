@@ -1,12 +1,12 @@
 import ../../src/nimlove as nimlove
-
+import ../../src/nimlove/image
 import std/options
 import gameobjectcontainer
 
-var soldierImage: nimlove.NimLoveImage
+var soldierImage: Image
 
 proc loadSoldierResources*() =
-  soldierImage = nimlove.newNimLoveImage("mob.png")
+  soldierImage = newImage("mob.png")
 
 type Soldier* = ref object of RootObj
   id: Id[Soldier]

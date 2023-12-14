@@ -1,4 +1,5 @@
 import ../../src/nimlove as nimlove
+import ../../src/nimlove/[image]
 
 const WindowWidth = 800
 const WindowHeight = 600
@@ -10,7 +11,7 @@ nimlove.setupNimLove(
   fullScreen = false,
 )
 
-let atlas = nimlove.newNimLoveImage("explosion.png")
+let atlas = newImage("explosion.png")
 
 let explosion_frames: seq[TextureAtlasTexture] = block:
   var f: seq[TextureAtlasTexture] = @[]
@@ -28,7 +29,7 @@ var animation = newAnimation(
   loop=true
 )
 
-let zombieAndSkeleton = newNimLoveImage("ded.png")
+let zombieAndSkeleton = newImage("ded.png")
 # 9 x 4
 # 288 - 256
 # 256 / 4 = 64

@@ -1,5 +1,5 @@
 import ../../src/nimlove as nimlove
-import ../../src/lovemodules/button as btn
+import ../../src/nimlove/[button, image, text]
 
 const WindowWidth = 800
 const WindowHeight = 600
@@ -14,9 +14,9 @@ nimlove.setupNimLove(
 
 
 
-let button = nimlove.newNimLoveImage("button.png")
-let button_default = nimlove.newTextureAtlasTexture(button, 0, 0, 100, 30)
-let button_hover = nimlove.newTextureAtlasTexture(button, 100, 0, 100, 30)
+let btn = newImage("button.png")
+let button_default = newTextureAtlasTexture(btn, 0, 0, 100, 30)
+let button_hover = newTextureAtlasTexture(btn, 100, 0, 100, 30)
 
 
 # input: create "Keyinput was consumed" field
@@ -34,7 +34,7 @@ let b = newButton(
 
 nimlove.runProgramm(
   onUpdate= proc(deltaTime: float) = 
-    nimlove.displayDebugInfo()
+    displayDebugInfo()
     block:
         let state = b.drawAndCollectInteraction()
         if state.clickedLeft:

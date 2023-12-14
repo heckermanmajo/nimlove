@@ -1,5 +1,5 @@
 import ../../src/nimlove as nimlove
-import ../../src/lovemodules/screenlogger as slogger
+import ../../src/nimlove/[screenlogger as slogger, text]
 
 import gameobjectcontainer
 import soldier
