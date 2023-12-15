@@ -9,6 +9,8 @@ import ../nimlove
 # und die parse-functions muss man dann als unserializeCallback hinterlegen
 
 
+# DIe serialisierung soll im grunde den nuter in kontrolle lassen
+
 
 var unSerializeCallbackTable*
     : Table[string, proc(fields: Table[string, string])] 

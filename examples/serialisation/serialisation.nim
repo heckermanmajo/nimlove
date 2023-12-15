@@ -69,11 +69,6 @@ type MyGameObject = ref object of RootObj
   someTable: Table[string, string]
 
 
-proc `%`(color: Color): JsonNode =
-  return %{
-    "__nimlove_type__": "Color",
-    "value": $color.int,
-  }.toTable
 
 proc `%`[T](id: Id[T]): JsonNode =
   return %{
@@ -102,6 +97,15 @@ proc idFromJson*[T](node: JsonNode): Id[T] =
   assert node["__nimlove_type__"].getStr == "Id"
   assert node["__value__"].kind == json.JInt
   return Id[T] node.getInt
+
+# we need to map images on the source
+# file path so that we dont load 
+# a file multiple times if we load atlases
+# from  
+proc imageFromJson*(node: JsonNode) = discard
+proc textureAtlasTextureFromJson*(node: JsonNode) = discard
+proc soundFromJson*(node: JsonNode) = discard
+
 
 echo %myGameObject3
 

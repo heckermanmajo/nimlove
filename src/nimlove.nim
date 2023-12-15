@@ -34,6 +34,7 @@ import nimlove/private/keys
 import nimlove/private/colors
 export keys
 export colors
+
 # defect is a special type of object that is used to throw exceptions
 # defect can on some compiler settings not be catched -> it should crash the program
 type SDLException* = object of Defect
@@ -53,6 +54,7 @@ template sdlFailIf*(condition: typed, reason: string) =
   if condition: raise SDLException.newException(
     reason & ", SDL error " & $getError()
   )
+
 
 
 ##############################################

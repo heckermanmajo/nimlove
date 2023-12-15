@@ -1,5 +1,5 @@
 # id 
-import std/tables
+import std/[tables, json]
 
 # what happens if we 
 # save refs to dead ones?
@@ -23,6 +23,23 @@ type Id*[T] = distinct int
 
 proc `$`*[T](id: Id[T]): string =
   return $id.int
+
+proc `%`[T](id: Id[T]): JsonNode =
+  return %{
+    "__nimlove_type__": "Id",
+    "__version__": "0.1",
+    "__value__": $id.int,
+  }.toTable
+
+proc idFromJson*[T](node: JsonNode): Id[T] =
+  if node["__nimlove_type__"].strVal != "Id":
+    raise newException(ValueError, "Expected Id, got: " & $node["__nimlove_type__"].strVal)
+  if node["__version__"].strVal != "0.1":
+    raise newException(ValueError, "Expected version 0.1, got: " & $node["__version__"].strVal)
+  if node["__value__"].kind != JInt:
+    raise newException(ValueError, "Expected int, got: " & $node["__value__"].kind)
+  return Id[T](node["__value__"].intVal)
+
 
 proc serialize*[T](id: Id[T]): string =
   return "Id[" & $id.int & "]"
