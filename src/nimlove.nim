@@ -134,7 +134,7 @@ proc newNimLoveContext(
 
   clear(result.renderer)
 
-  #setTitle(result.window, Title)
+  # setTitle(result.window, Title)
   if fullScreen:
     echo "Try to set game to fullscreen"
     discard setFullscreen(result.window, SDL_WINDOW_FULLSCREEN_DESKTOP) # todo: handle error

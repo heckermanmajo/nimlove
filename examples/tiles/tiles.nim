@@ -39,7 +39,7 @@ type Camera = object
 # camera movement
 # highlight functions -> welche tiles werden wie gehighlighted??
 
-setDelayCPUWaste(false)
+#setDelayCPUWaste(false)
 
 nimlove.runProgramm proc(delta_time: float) =
   tileAtlas.draw(0, 0)

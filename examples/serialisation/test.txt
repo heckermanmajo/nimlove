@@ -1,0 +1,13 @@
+nimlove-IdObjects-file
+version: 0.1
+number-of-objects: 10
+{"id":{"__value__":"0","__nimlove_type__":"Id","__version__":"0.1"},"name":"","value":0,"option":null,"option2":null,"option3":null,"values":{},"lols":[],"lols2":{}}
+{"id":{"__value__":"0","__nimlove_type__":"Id","__version__":"0.1"},"name":"","value":0,"option":null,"option2":null,"option3":null,"values":{},"lols":[],"lols2":{}}
+{"id":{"__value__":"0","__nimlove_type__":"Id","__version__":"0.1"},"name":"","value":0,"option":null,"option2":null,"option3":null,"values":{},"lols":[],"lols2":{}}
+{"id":{"__value__":"0","__nimlove_type__":"Id","__version__":"0.1"},"name":"","value":0,"option":null,"option2":null,"option3":null,"values":{},"lols":[],"lols2":{}}
+{"id":{"__value__":"0","__nimlove_type__":"Id","__version__":"0.1"},"name":"","value":0,"option":null,"option2":null,"option3":null,"values":{},"lols":[],"lols2":{}}
+{"id":{"__value__":"0","__nimlove_type__":"Id","__version__":"0.1"},"name":"","value":0,"option":null,"option2":null,"option3":null,"values":{},"lols":[],"lols2":{}}
+{"id":{"__value__":"0","__nimlove_type__":"Id","__version__":"0.1"},"name":"","value":0,"option":null,"option2":null,"option3":null,"values":{},"lols":[],"lols2":{}}
+{"id":{"__value__":"0","__nimlove_type__":"Id","__version__":"0.1"},"name":"","value":0,"option":null,"option2":null,"option3":null,"values":{},"lols":[],"lols2":{}}
+{"id":{"__value__":"0","__nimlove_type__":"Id","__version__":"0.1"},"name":"","value":0,"option":null,"option2":null,"option3":null,"values":{},"lols":[],"lols2":{}}
+{"id":{"__value__":"0","__nimlove_type__":"Id","__version__":"0.1"},"name":"","value":0,"option":null,"option2":null,"option3":null,"values":{},"lols":[],"lols2":{}}

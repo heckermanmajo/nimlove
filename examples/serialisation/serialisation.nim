@@ -1,196 +1,175 @@
-import std/[sequtils, strutils, tables] 
-import json
-import std/marshal
-import ../../src/nimlove as nimlove
-import ../../src/nimlove/serialize
-import ../../src/nimlove/id
+## Obect serialisation:
+## You can json serialize the following types:
+## - Id 
+## - IdObjectContainer (you need to implement % and put in a unserialize callback)
+## - Colors
+## - Images
+## - Sounds
+## - TextureAtlasTexture
+## - EImage 
+## - all nim-types like "string, int, float, etc."
+## 
+## Be carful with option, since it Option[T] will be serialized to null or %T
 
-const WindowWidth = 800
-const WindowHeight = 600
+
+import std/[sequtils, strutils, tables, options, json] 
+import ../../src/nimlove as nimlove
+import ../../src/nimlove/idobject
+
+const WindowWidth   = 800
+const WindowHeight  = 600
 
 nimlove.setupNimLove(
-  windowWidth = WindowWidth,
-  windowHeight = WindowHeight,
-  windowTitle = "Serialisation Example",
-  fullScreen = false,
+  windowWidth   = WindowWidth,
+  windowHeight  = WindowHeight,
+  windowTitle   = "Serialisation Example",
+  fullScreen    = false,
 )
 
-#[
+type 
+  
+  GameObjectB = object
+    id:       Id[GameObjectB]
+    name:     string
+    value:    int
+    option:   Option[string]
+    option2:  Option[Id[GameObjectA]]
+    option3:  Option[Id[GameObjectA]]
 
-  Ideas for serialisation:
-
-    -> give the serialisation function a callback in which you closure in
-       a container where to put the unserialised objects
-    -> repr of string and all nimlove types are already implemented
-    -> we can pass in the raw values, not the repr string
-    -> we cann add additional infos like the version of the repr, etc.
-    -> floats, bools and ints are already parsed to the normal format
-
-    -> for creating the serialisation function we use getReprFields
-    -> raw fields, the repr just adds : and the prefix and the() nd joins them 
-    -> and off course checks them 
-    -> all strngs are checked for quotes and newlines and escaped
-    
-
-    -> all passed in raw fields can only be comprised of base datatypes and Ids[]
-
-]#
-
-## serialisierung -> alle gleichen typoen kommen in eine datei.
-## <json_string>
-#[
-echo %{
-    "field_name1": {
-      "__type__": "int", 
-      "__value__": "1"
-    },
-    "field_name2": {
-      "__type__": "int", 
-      "__value__": "2"
-      },
-    "field_name3": {
-      "__type__": "Table", 
-      "__value__": 
-    },
-    "field_name4": {
-      "__type__": "int", 
-      "__value__": "4"
-    }
-}
-]#
-
-let MyGameObjectName = "MyGameObject"
-type MyGameObject = ref object of RootObj
-  id: Id[MyGameObject]
-  x, y: float
-  width, height: float
-  color: Color
-  name: string
-  someTable: Table[string, string]
+  GameObjectA = object
+    id: Id[GameObjectA]
+    name: string
+    value: int
+    option: Option[string]
+    option2: Option[Id[GameObjectB]]
+    option3: Option[Id[GameObjectA]]
+    values: Table[string, string]
+    lols: seq[string]
+    lols2: Table[string, Id[GameObjectB]]
 
 
+proc `%`*(self: GameObjectA) : JsonNode =
+  result = % {
+    "id":       %self.id,
+    "name":     %self.name,
+    "value":    %self.value,
+    "option":   %self.option,
+    "option2":  %self.option2,
+    "option3":  %self.option3,
+    "values":   %self.values,
+    "lols":     %self.lols,
+    "lols2":    %self.lols2,
+  }
 
-proc `%`[T](id: Id[T]): JsonNode =
-  return %{
-    "__nimlove_type__": "Id",
-    "value": $id.int,
-  }.toTable
+proc GameObjectAFromJson*(node: JsonNode) : GameObjectA =
+  result = GameObjectA()
 
-let myGameObject3 = MyGameObject(
-  x: 100.0,
-  y: 100.0,
-  width: 50.0,
-  height: 50.0,
-  color: toColor(255, 0, 0),
-  name:"\"some name txt \n",
-  someTable: {
-    "key1 lol": "value1 poop",
-    "key2 kek": "value2 boom",
-  }.toTable,
-)
+  result.id =        getId[GameObjectA] node["id"]
+  result.name =      getStr node["name"]
+  result.value =     getInt node["value"]
 
-proc colorFromJson*(node: JsonNode): Color =
-  assert node.kind == json.JInt
-  return Color node.getInt
+  result.option 
+    = if node["option"].isNil: none(string) 
+    else: some(getStr node["option"])
+  result.option2 
+    = if node["option2"].isNil: none(Id[GameObjectB]) 
+    else: some(getId[GameObjectB] node["option2"])
+  result.option3 
+    = if node["option3"].isNil: none(Id[GameObjectA]) 
+    else: some(getId[GameObjectA] node["option3"])
+  
+  result.values = block:
+    var table: Table[string, string] = initTable[string, string]()
+    for key, value in node["values"].pairs:
+      table[key] = getStr value
+    table
 
-proc idFromJson*[T](node: JsonNode): Id[T] =
-  assert node["__nimlove_type__"].getStr == "Id"
-  assert node["__value__"].kind == json.JInt
-  return Id[T] node.getInt
+  result.lols = block:
+    var lols: seq[string] = @[]
+    for value in node["lols"].items:
+      lols.add getStr value
+    lols
 
-# we need to map images on the source
-# file path so that we dont load 
-# a file multiple times if we load atlases
-# from  
-proc imageFromJson*(node: JsonNode) = discard
-proc textureAtlasTextureFromJson*(node: JsonNode) = discard
-proc soundFromJson*(node: JsonNode) = discard
+  result.lols2 = block:
+    var table: Table[string, Id[GameObjectB]] = initTable[string, Id[GameObjectB]]()
+    for key, value in node["lols2"].pairs:
+      table[key] = getId[GameObjectB] value
+    table
 
 
-echo %myGameObject3
 
-let jsonNode = %myGameObject3
-let jsonString = $jsonNode
-var j = jsonString.parseJson
+proc `%`*(self: GameObjectB) : JsonNode =
+  result = % {
+    "id":       %self.id,
+    "name":     %self.name,
+    "value":    %self.value,
+    "option":   %self.option,
+    "option2":  %self.option2,
+    "option3":  %self.option3,
+  }
 
-echo j.contains("id")
-for key, value in j.fields:
-  echo key, " : ", $value
+proc GameObjectBFromJson*(node: JsonNode) : GameObjectB =
+    result = GameObjectB()
+
+    result.id =        getId[GameObjectB] node["id"]
+    result.name =      getStr node["name"]
+    result.value =     getInt node["value"]
+  
+    result.option 
+      = if node["option"].isNil: none(string) 
+      else: some(getStr node["option"])
+    result.option2 
+      = if node["option2"].isNil: none(Id[GameObjectA]) 
+      else: some(getId[GameObjectA] node["option2"])
+    result.option3 
+      = if node["option3"].isNil: none(Id[GameObjectA]) 
+      else: some(getId[GameObjectA] node["option3"])
+
+# We need to implement the IdObject-concept for our GameObjects
+
+proc isDeleted*(self: GameObjectA): bool = false
+proc setBackToUndeleted*(self: GameObjectA) = discard
+proc updateEachFrame*(self: GameObjectA) = discard
+
+proc isDeleted*(self: GameObjectB): bool = false
+proc setBackToUndeleted*(self: GameObjectB) = discard
+proc updateEachFrame*(self: GameObjectB) = discard
+
+
+
+
+
+
+var GameObjectAContainer = IdObjectContainer[GameObjectA]()
+
+proc newGameObjectA(): GameObjectA =
+  result = GameObjectA()
+  result.id = GameObjectAContainer.insert(result)
+  return result
+
+let tenGameobjects = block:
+  var gameObjects: seq[GameObjectA] = @[]
+  for i in 0..<10:
+    gameObjects.add newGameObjectA()
+    echo %gameObjects[i]
+  gameObjects
+
+assert GameObjectAContainer.exists(tenGameobjects[0].id)
+assert GameObjectAContainer.exists(tenGameobjects[1].id)
+assert GameObjectAContainer.exists(tenGameobjects[2].id)
+assert GameObjectAContainer.exists(tenGameobjects[3].id)
+assert GameObjectAContainer.exists(tenGameobjects[4].id)
+assert GameObjectAContainer.exists(tenGameobjects[5].id)
+assert GameObjectAContainer.exists(tenGameobjects[6].id)
+assert GameObjectAContainer.exists(tenGameobjects[7].id)
+assert GameObjectAContainer.exists(tenGameobjects[8].id)
+assert GameObjectAContainer.exists(tenGameobjects[9].id)
+
+
+GameObjectAContainer.writeAllIdObjectsToFile("test.txt")
+
 
 quit 0
-
-
-
-proc myObjectFromJsonNode*(node: JsonNode): MyGameObject =
-  assert node.kind == json.JObject
-  return MyGameObject(
-    id: if node.contains("id"): idFromJson[MyGameObject] node["id"] else: cast[Id[MyGameObject]](-1), 
-    #[x: x,
-    y: y,
-    width: width,
-    height: height,
-    color: color,
-    name: name,
-    someTable: someTable,]#
-  )
-
-var MyGameObjectContainer*:IdObjectContainer[MyGameObject]
-
-proc getTypeName*(obj: MyGameObject): string = MyGameObjectName
-
-proc serialize*(obj: MyGameObject): Table[string, string] =
-  return {
-    "__type__:": MyGameObjectName,
-    "__version__:": "1.0",
-    "id": serialize obj.id,
-    "x" : serialize obj.x,
-    "y" : serialize obj.y,
-    "width":serialize obj.width,
-    "height": serialize obj.height,
-    "color": serialize obj.color,
-    "name": serialize obj.name,
-    "someTable": serialize obj.someTable,
-  }.toTable
-
-proc unserialize*(fields: Table[string, string]): MyGameObject =
-  let myObject = MyGameObject(
-    id:     if fields.hasKey("id"):       unSerializeId[MyGameObject] fields["id"] else: cast[Id[MyGameObject]](-1),
-    x:      if fields.hasKey("x"):        unSerializeFloat fields["x"]       else: 0.0,
-    y:      if fields.hasKey("y"):        unSerializeFloat fields["y"]       else: 0.0,
-    width:  if fields.hasKey("width"):    unSerializeFloat fields["width"]   else: 0.0,
-    height: if fields.hasKey("height"):   unSerializeFloat fields["height"]  else: 0.0,
-    color:  if fields.hasKey("color"):    unSerializeColor fields["color"]   else: Color(0),
-    name:   if fields.hasKey("name"):     unSerializeString fields["name"]   else: "",
-  )
-  return myObject
-
-unSerializeCallbackTable[MyGameObjectName] = proc(fields: Table[string, string]) =
-  let myObject = unserialize(fields)
-  discard MyGameObjectContainer.insert(myObject)
-
-
-
-
-let myGameObject = MyGameObject(
-  x: 100.0,
-  y :100.0,
-  width: 50.0,
-  height: 50.0,
-  color: toColor(255, 0, 0),
-  name:"\"some name txt \n",
-  someTable: {
-    "key1 lol": "value1 poop",
-    "key2 kek": "value2 boom",
-  }.toTable,
-)
-echo myGameObject.serialize
-
-let myGameObject2 = unserialize(myGameObject.serialize)
-
-echo myGameObject2.serialize
-
-quit 0
-
 nimlove.runProgramm(
   onUpdate= proc(deltaTime: float) = discard,
   onKeyDown= proc(key: NimLoveKey) = discard,

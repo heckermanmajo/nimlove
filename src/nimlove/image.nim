@@ -114,6 +114,12 @@ proc newTextureAtlasTexture*(
   if textureStartX < 0 or textureStartY < 0 or textureWidth < 0 or textureHeight < 0:
     raise newException(NimBrokenHeartError, "Texture atlas texture parameters must be positive.")
   if textureStartX + textureWidth > image.width or textureStartY + textureHeight > image.height:
+    echo "textureStartX: ", textureStartX
+    echo "textureStartY: ", textureStartY
+    echo "textureWidth: ", textureWidth
+    echo "textureHeight: ", textureHeight
+    echo "image.width: ", image.width
+    echo "image.height: ", image.height
     raise newException(NimBrokenHeartError, "Texture atlas texture parameters must be smaller than the image.")
   result.textureStartX = textureStartX
   result.textureStartY = textureStartY

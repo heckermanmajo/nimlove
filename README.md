@@ -1,5 +1,7 @@
 # NimLove(2d) WIP!!
 
+!(pss.png)[Popel Schnipsing Studios]
+
 My attempt to create a "forever-enviroment" for 2d games.
 
 ## Step 1 Install sdl2 on your system

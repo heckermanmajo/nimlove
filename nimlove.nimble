@@ -12,6 +12,9 @@ srcDir        = "src"
 # Dependencies
 
 requires "nim >= 1.6.0"
+# https://github.com/Nycto/AStarNim
+requires "binaryheap"
+# https://github.com/nim-lang/sdl2
 requires "sdl2"  # nims offical sdl2 wrapper
 # todo: add astar
 
@@ -31,7 +34,10 @@ let runnableExamples = @[
   "button",
   "font",
   "protocol",
-  "serialisation"
+  "serialisation",
+  "astar_ex",
+  "pathfind",
+  "intro"
 ]
 
 task r, "run the game":
