@@ -37,7 +37,8 @@ let runnableExamples = @[
   "serialisation",
   "astar_ex",
   "pathfind",
-  "intro"
+  "intro",
+  "path2"
 ]
 
 task r, "run the game":

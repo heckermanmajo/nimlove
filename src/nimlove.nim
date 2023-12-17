@@ -140,7 +140,7 @@ proc newNimLoveContext(
     discard setFullscreen(result.window, SDL_WINDOW_FULLSCREEN_DESKTOP) # todo: handle error
 
   # load the basic font
-  var font = openFont(cstring(ABSOLUTE_PATH & "font.ttf"), 20)
+  var font = openFont(cstring(ABSOLUTE_PATH & "font.ttf"), 12)
 
   sdlFailIf font.isNil: "font could not be created"
   #close font

@@ -5,20 +5,14 @@ import std/[tables, options, random]
 import ../../src/nimlove as nimlove
 import ../../src/nimlove/image
 import ../../src/nimlove/text
+import ../../src/nimlove/map
 
-static:
-    echo "astar loaded1"
 
-import map
-
-static:
-    echo "astar loaded2"
 random.randomize()
 
 const WindowWidth = 800
 const WindowHeight = 600
-static:
-    echo "astar loaded3"
+
 nimlove.setupNimLove(
   windowWidth = WindowWidth,
   windowHeight = WindowHeight,
@@ -26,8 +20,6 @@ nimlove.setupNimLove(
   fullScreen = false,
 )
 
-static:
-    echo "astar loaded4"
 map.initMapTextures() 
 
 
@@ -55,11 +47,16 @@ proc isPassable*(t: MyGameTile): bool = return t.passable
 
 var m = newMap[MyGameTile](
     sideLenInChunks= 1,
-    createGameTileCallback= proc(m: Map[MyGameTile], chunk: Chunk[MyGameTile], tile: Tile[MyGameTile]): MyGameTile = 
-      let t = new(MyGameTile)
-      t.passable = if rand(100) < 40: false else: true
-      t.selected = false
-      return t 
+    createGameTileCallback
+      = proc(
+        m: Map[MyGameTile], 
+        chunk: Chunk[MyGameTile], 
+        tile: Tile[MyGameTile]
+      ): MyGameTile = 
+        let t = new(MyGameTile)
+        t.passable = if rand(100) < 15: false else: true
+        t.selected = false
+        return t 
 )
 let textures = map.getMapTextures()
 var clickedTile = none(Tile[MyGameTile])
@@ -71,39 +68,23 @@ var clickedTile = none(Tile[MyGameTile])
 # select random start
 # select random target
 # then get the a star path between
-static:
-    echo "astar loaded5"
 
 let c: Option[Chunk[MyGameTile]] = m.getChunkAt(0, 0)
-static:
-    echo "astar loaded5"
 
 var paths: seq[Tile[MyGameTile]] = @[]    
 if c.isSome:
   echo c.get
-  static:
-    echo "astar loaded5"
   var t: Tile[MyGameTile] = m.getTileAt(0, 0).get
 
-  #echo t
-  static:
-    echo "astar loaded6"
-
   var t2: Tile[MyGameTile] = m.getTileAt(14*32, 14*32).get
-  static:
-    echo "astar loaded7"
 
   var myChunk: Chunk[MyGameTile] = c.get
 
   for n in myChunk.neighbors(m.getTileAt(14*32, 14*32).get):
     echo n
 
-  static:
-    echo "astar loaded8"
   paths = myChunk.getPathFromTo(t, t2)
   echo paths
-static:
-    echo "astar loaded6"
 
 nimlove.runProgramm(
 
@@ -124,10 +105,16 @@ nimlove.runProgramm(
     if clickedTile.isSome:
       let texture = textures["blue_outline"]
       texture.draw(clickedTile.get.x, clickedTile.get.y)
-
+    for tpos in map.allVisitedDebug:
+      let texture = textures["ball_black"]
+      texture.draw(tpos.x*32, tpos.y*32)
     for t in paths:
-      let texture = textures["white"]
+      let texture = textures["ball_blue"]
       texture.draw(t.x, t.y)
+    for t in allCostsDebug:
+      drawText($t.cost.int, t.x*32+4, t.y*32, color=Yellow)
+    for t in allCostsDebug:
+      drawText($t.cost.int, t.x*32+4, t.y*32+15, color=White)
 
     text.displayDebugInfo()
     

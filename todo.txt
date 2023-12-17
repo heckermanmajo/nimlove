@@ -1,39 +1,11 @@
+
+- baseassets-folder with all core assests
+
+- Trennung von Map & Pathfinding into prvate 
+
 - Scenes: Diable/anable Logic and Rendering
   - Just a blueprint for some logic stuff and code organisation
+
 - DrawGroups: apply zoom on all elements fo draw groups
   - bascailly collections
 
-
-
-- add all the callback-procs: keys and mouse stuff
-- put global resources in resource folder
-- write objects into csv lines
-- use game objects as base
-- add formatting for csv file, use ids and make them to eal refs
-  - ref object
-
-- own embeddable config/scripting language: lua
-- and kek for even easier embedding
-
-- type into textfield-ui
-- display different views
-- add simple buttons: start of ui, like in imgui, "stateless": Gui module
-
-- save al loaded images and sounds in a internal list, so we can
-  log if multiple times the same resource is loaded
-
-- add a grid module/tilemap module
-- add aload and save example
-
-- add a work splitter for heavy work
-  you don't need to do all calculations in one frame
-  -> f.e. "thinking" of units, pathfinding, etc.
-  So cou can split out the work over multiple frames
-  -> "coroutines"? maybe just create an iterator for this
-     An iterator that takes in teh current time ans some params
-     and only loops over the objects for that the work is scheduled
-
-
-done:
-- add a zoom in and out variable to the draw image proc
-- get a simple texture atlas working: Make animations easy

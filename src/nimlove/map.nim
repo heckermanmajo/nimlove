@@ -1,3 +1,4 @@
+from os import fileExists
 import std/[tables, options, math, hashes, json, strutils]
 import binaryheap # external package 
 
@@ -6,7 +7,7 @@ import ../../src/nimlove/image
 
 # todo: steigung
 
-
+#https://godotforums.org/d/34106-bunch-of-vehicle-stucks-themselves-after-astar-calculation/37
 
 
 
@@ -72,6 +73,8 @@ var tileTextures: Table[string, TextureAtlasTexture]
 
 proc x*[T:GameTile](self: Tile[T]): int = self.x * self.map.tileSizeInPixels
 proc y*[T:GameTile](self: Tile[T]): int = self.y * self.map.tileSizeInPixels
+proc xNum*[T:GameTile](self: Tile[T]): int = self.x
+proc yNum*[T:GameTile](self: Tile[T]): int = self.y
 proc gameTile*[T:GameTile](self: Tile[T]): T = self.gameTile
 proc `$`*[T:GameTile](self: Tile[T]): string = 
     return "Tile: " & $self.x & "," & $self.y
@@ -352,7 +355,7 @@ proc readFromFile*[T: GameTile](
     var file = open(filePath, fmRead)
     let content = file.readLine()
     let node = parseJson(content)
-    return mapFromJson[T](node, unserializeGivenGameTileCallback
+    return mapFromJson[T](node, unserializeGivenGameTileCallback)
 
 
 
@@ -377,7 +380,12 @@ proc readFromFile*[T: GameTile](
 #########
 
 proc initMapTextures*() = 
-    var ei = newEditableImage("tiles.png")
+    const ex = fileExists("/tiles.png")
+    var ei: EditableImage
+    if not ex:
+        ei = newEditableImage("/baseassets/tiles.png")
+    else:
+        ei = newEditableImage("/tiles.png")
     #echo ei.getPixel(32*7-1,0)# (9, 120, 0; 255)
     ei.replaceColor(PixelValue(r: 9, g: 120, b: 0, a: 255), PixelValueWhite)
 
@@ -386,7 +394,7 @@ proc initMapTextures*() =
         var textures = initTable[string, TextureAtlasTexture]()
         let all = readLineOfTextureAtlas(
             fromImage=tileAtlas,
-            num=7,
+            num=27,
             widthPX=32,
             heigthPX=32, 
             rowNumber=0, 
@@ -398,7 +406,11 @@ proc initMapTextures*() =
         textures["lightblue_outline"] = all[3]
         textures["yellow_outline"] = all[4]
         textures["gray"] = all[5]
-        textures["white"] = all[6]
+        textures["white"] = all[6]        
+        textures["ball_black"] = all[11]
+        textures["ball_white"] = all[12]
+        textures["ball_light_blue"] = all[14]
+        textures["ball_blue"] = all[15]
         textures 
 
 proc getMapTextures*(): Table[string, TextureAtlasTexture] = 
@@ -430,7 +442,8 @@ type
         ## to this node and how much it costs to get here
 
 iterator backtrack[T: GameTile](
-    cameFrom: Table[Tile[T], CameFrom[T]], start, goal: Tile[T]
+    cameFrom: Table[Tile[T], CameFrom[T]], 
+    start, goal: Tile[T]
 ): Tile[T] =
     ## Once the table of back-references is filled, this yields the reversed
     ## path back to the consumer
@@ -439,9 +452,11 @@ iterator backtrack[T: GameTile](
     var current: Tile[T] = goal
     var path: seq[Tile[T]] = @[]
 
+
     while current != start:
-        path.add(current)
         current = `[]`(cameFrom, current).node
+        path.add(current)
+        
 
     for i in countdown(path.len - 1, 0):
         yield path[i]
@@ -467,9 +482,15 @@ proc calcHeuristic[T: GameTile] (
     else:
         return graph.heuristic(next, goal)
 
+
+var allVisitedDebug*: seq[tuple[x:int,y:int]] = @[]
+var allCostsDebug*: seq[tuple[x:int,y:int,cost:float]] = @[]
+var allPriorityDebug*: seq[tuple[x:int,y:int,priority:float]] = @[]
+
 iterator path*[T: GameTile](graph: Chunk[T], start, goal: Tile[T]): Tile[T] =
     ## Executes the A-Star algorithm and iterates over the nodes that connect
     ## the start and goal
+    
 
     # The frontier is the list of nodes we need to visit, sorted by a
     # combination of cost and how far we estimate them to be from the goal
@@ -511,7 +532,14 @@ iterator path*[T: GameTile](graph: Chunk[T], start, goal: Tile[T]): Tile[T] =
                     graph, next, start, goal, current, cameFrom )
 
                 # Also add it to the frontier so we check out its neighbors
+                allVisitedDebug.add( (next.x, next.y) )
+                allCostsDebug.add( (next.x, next.y, cost) )
+                allPriorityDebug.add( (next.x, next.y, priority) )
                 frontier.push( (next, priority, cost) )
+
+
+
+
 
 
 #################################################################################
@@ -541,35 +569,36 @@ iterator neighbors*[T:GameTile]( grid: Chunk[T], tile: Tile[T] ): Tile[T] =
     # y and x are switched because the grid is stored as [y][x]
     echo "tile.y: " & $tile.y
     echo "tile.x: " & $tile.x
-    if tile.y > 0:  
-        echo "yielding " & $grid.map.getTileAtNum(tile.y-1, tile.x).get  
-        let t = grid.map.getTileAtNum(tile.y-1, tile.x).get   
-        if t.gameTile.isPassable(): yield t #     
-    if tile.y < lenOfChunk - 1:   
-        echo "yielding " & $grid.map.getTileAtNum(tile.y+1, tile.x).get
-        let t = grid.map.getTileAtNum(tile.y+1, tile.x).get
-        if t.gameTile.isPassable(): yield t #
-        yield grid.map.getTileAtNum(tile.y+1, tile.x).get  # grid[tile.y + 1][tile.x]
-    if tile.x > 0:                
-        echo "yielding " & $grid.map.getTileAtNum(tile.y, tile.x-1).get
-        let t = grid.map.getTileAtNum(tile.y, tile.x-1).get
-        if t.gameTile.isPassable(): yield t #
-        yield t
-    if tile.x < lenOfChunk - 1:   
-        echo "yielding " & $grid.map.getTileAtNum(tile.y, tile.x+1).get
-        let t = grid.map.getTileAtNum(tile.y, tile.x+1).get
-        if t.gameTile.isPassable(): yield t #
-        yield t
+    if tile.gameTile.isPassable():
+        if tile.y > 0:  
+            echo "yielding " & $grid.map.getTileAtNum(tile.y-1, tile.x).get  
+            let t = grid.map.getTileAtNum(tile.y-1, tile.x).get   
+            if t.gameTile.isPassable(): yield t #     
+        if tile.y < lenOfChunk - 1:   
+            echo "yielding " & $grid.map.getTileAtNum(tile.y+1, tile.x).get
+            let t = grid.map.getTileAtNum(tile.y+1, tile.x).get
+            if t.gameTile.isPassable(): yield t #
+            #yield grid.map.getTileAtNum(tile.y+1, tile.x).get  # grid[tile.y + 1][tile.x]
+        if tile.x > 0:                
+            echo "yielding " & $grid.map.getTileAtNum(tile.y, tile.x-1).get
+            let t = grid.map.getTileAtNum(tile.y, tile.x-1).get
+            if t.gameTile.isPassable(): yield t #
+            #yield t
+        if tile.x < lenOfChunk - 1:   
+            echo "yielding " & $grid.map.getTileAtNum(tile.y, tile.x+1).get
+            let t = grid.map.getTileAtNum(tile.y, tile.x+1).get
+            if t.gameTile.isPassable(): yield t #
+            #yield t
 
 proc cost*[T:GameTile](grid: Chunk[T], a, b: Tile[T]): float =
     ## Returns the cost of moving from point `a` to point `b`
-    return abs(float(a.x - b.x) + float(a.y - b.y))
+    return abs(float(a.x*32 - b.x*32) + float(a.y*32 - b.y*32))
 
 proc heuristic*[T:GameTile]( grid: Chunk[T], node, goal: Tile[T] ): float =
     ## Returns the priority of inspecting the given node
     return sqrt(
-        pow(float(node.x) - float(goal.x), 2) +
-        pow(float(node.y) - float(goal.y), 2) ) 
+        pow(float(node.x*32) - float(goal.x*32), 2) +
+        pow(float(node.y*32) - float(goal.y*32), 2) ) 
 
 
 proc getPathFromTo*[T:GameTile](grid: Chunk[T], start, goal: Tile[T]): seq[Tile[T]] =
@@ -582,3 +611,11 @@ proc getPathFromTo*[T:GameTile](grid: Chunk[T], start, goal: Tile[T]): seq[Tile[
     return lpath
 static:
     echo "astar loaded"
+
+
+
+# get each border tile of a non passable tile
+# get all directly reachable tiles from each border tile
+#    - going one around in each direction until we hit a non passable tile
+# Both can done at once, at the start of the game for the whole map
+# if stuff is updated in a chuck, we recalculate the border tiles of that chunk

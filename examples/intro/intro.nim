@@ -1,15 +1,19 @@
 import ../../src/nimlove as nimlove
 import ../../src/nimlove/image
-
+import ../../src/nimlove/sound
 const WindowWidth = 800
 const WindowHeight = 600
 
 nimlove.setupNimLove(
   windowWidth = WindowWidth,
   windowHeight = WindowHeight,
-  windowTitle = "NimLove - A Popel Schipsing Software",
+  windowTitle = "NimLove - A Popel Schnipsing Software",
   fullScreen = false,
 )
+
+var song = newSound("song.ogg")
+discard song.play()
+
 
 let pss1 = newImage("pss1.png")
 let pss2 = newImage("pss2.png")
