@@ -18,17 +18,29 @@ type Camera* = ref object
 proc newCamera*(zoom: float = 1.0): Camera =
     result = Camera(zoom:zoom, x:0.0, y:0.0)
 
-proc zoom*(camera: Camera, zoom: float) =
-    camera.zoom = zoom
+proc zoom*(camera: Camera): float =
+    camera.zoom
+
+proc zoomIn*(camera: Camera) =
+    camera.zoom += 0.1
+
+proc zoomOut*(camera: Camera) =
+    camera.zoom -= 0.1
 
 proc move*(camera: Camera, x, y: float) =
-    camera.x = x
-    camera.y = y
+    camera.x += x
+    camera.y += y
 
 proc moveX*(camera: Camera, x: float) =
-    camera.x = x
+    camera.x += x
 
 proc moveY*(camera: Camera, y: float) =
+    camera.y += y
+
+proc setX*(camera: Camera, x: float) =
+    camera.x = x
+
+proc setY*(camera: Camera, y: float) =
     camera.y = y
 
 proc x*(camera: Camera): float =
@@ -55,5 +67,13 @@ proc cameraFromJson*(node: JsonNode): Camera =
     result.x = node["x"].getFloat()
     result.y = node["y"].getFloat()
 
+# todo: maybe to the nimlove context??
+var camera = newCamera()
 
+proc getCamera*(): var Camera = camera
+proc getCamX*(): float = camera.x
+proc getCamY*(): float = camera.y
+proc getCamZoom*(): float = camera.zoom
 
+proc setCamera*(cam: Camera) =
+    camera = cam

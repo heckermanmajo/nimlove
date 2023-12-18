@@ -54,6 +54,7 @@ type
     node: Tile[T] ## used by the astar algorithm (the nim lib)
 
   Map*[T: GameTile] = ref object
+    ## The whole map.
     tileSizeInPixels:int = 32
     chunkSizeInTiles:int = 16
     tiles: Table[X, Table[Y, Tile[T]]]
@@ -62,6 +63,61 @@ type
 
 
 var tileTextures: Table[string, TextureAtlasTexture]
+
+#################################################################################
+#
+#
+#
+#
+#   TEXTURE FUNCTIONS
+#
+#
+#
+#
+#################################################################################
+#########
+##  TEXTURE FUNCTIONS 
+#########
+var module_initCalled = false
+proc initMapTextures*() = 
+    const ex = fileExists("/tiles.png")
+    var ei: EditableImage
+    if not ex:
+        ei = newEditableImage("/baseassets/tiles.png")
+    else:
+        ei = newEditableImage("/tiles.png")
+    #echo ei.getPixel(32*7-1,0)# (9, 120, 0; 255)
+    ei.replaceColor(PixelValue(r: 9, g: 120, b: 0, a: 255), PixelValueWhite)
+
+    let  tileAtlas= ei.makeImageFromEImage()
+    tileTextures = block:
+        var textures = initTable[string, TextureAtlasTexture]()
+        let all = readLineOfTextureAtlas(
+            fromImage=tileAtlas,
+            num=27,
+            widthPX=32,
+            heigthPX=32, 
+            rowNumber=0, 
+            startPosition=0
+        )
+        textures["green_outline"] = all[0]
+        textures["blue_outline"] = all[1]
+        textures["red_outline"] = all[2]
+        textures["lightblue_outline"] = all[3]
+        textures["yellow_outline"] = all[4]
+        textures["gray"] = all[5]
+        textures["white"] = all[6]        
+        textures["ball_black"] = all[11]
+        textures["ball_white"] = all[12]
+        textures["ball_light_blue"] = all[14]
+        textures["ball_blue"] = all[15]
+        textures 
+
+    module_initCalled = true # allows to check if init was called
+
+proc getMapTextures*(): Table[string, TextureAtlasTexture] = 
+    if tileTextures.len == 0: initMapTextures()
+    return tileTextures
 
 
 #################################################################################
@@ -220,7 +276,7 @@ proc newChunk*[T:GameTile](
     x, y: int,
     createGameTileCallback: proc(m: Map[T], chunk: Chunk[T], tile: Tile[T]): T 
 ): Chunk[T] =
-
+    if module_initCalled == false: initMapTextures()
     result = Chunk[T]()
     result.x = x
     result.y = y
@@ -433,58 +489,7 @@ proc readFromFile*[T: GameTile](
 
 
 
-#################################################################################
-#
-#
-#
-#
-#   TEXTURE FUNCTIONS
-#
-#
-#
-#
-#################################################################################
-#########
-##  TEXTURE FUNCTIONS 
-#########
 
-proc initMapTextures*() = 
-    const ex = fileExists("/tiles.png")
-    var ei: EditableImage
-    if not ex:
-        ei = newEditableImage("/baseassets/tiles.png")
-    else:
-        ei = newEditableImage("/tiles.png")
-    #echo ei.getPixel(32*7-1,0)# (9, 120, 0; 255)
-    ei.replaceColor(PixelValue(r: 9, g: 120, b: 0, a: 255), PixelValueWhite)
-
-    let  tileAtlas= ei.makeImageFromEImage()
-    tileTextures = block:
-        var textures = initTable[string, TextureAtlasTexture]()
-        let all = readLineOfTextureAtlas(
-            fromImage=tileAtlas,
-            num=27,
-            widthPX=32,
-            heigthPX=32, 
-            rowNumber=0, 
-            startPosition=0
-        )
-        textures["green_outline"] = all[0]
-        textures["blue_outline"] = all[1]
-        textures["red_outline"] = all[2]
-        textures["lightblue_outline"] = all[3]
-        textures["yellow_outline"] = all[4]
-        textures["gray"] = all[5]
-        textures["white"] = all[6]        
-        textures["ball_black"] = all[11]
-        textures["ball_white"] = all[12]
-        textures["ball_light_blue"] = all[14]
-        textures["ball_blue"] = all[15]
-        textures 
-
-proc getMapTextures*(): Table[string, TextureAtlasTexture] = 
-    if tileTextures.len == 0: initMapTextures()
-    return tileTextures
 
 
 proc distanceIsOne*[T:GameTile](a,b: Tile[T]): bool = 

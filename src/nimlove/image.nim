@@ -5,6 +5,7 @@ import sdl2/[mixer, ttf, image]
 
 import ../nimlove as nl
 import private/eimage
+import camera
 
 export eimage except surface
 
@@ -68,14 +69,40 @@ proc draw*(
   d.w =  if width == 0: image.width.cint else: cint width
   d.h =  if height == 0: image.height.cint else: cint height
 
+  # TODO: remove this zoom stuff -> this is done in The CAMERA module
   assert d.w > 0 and d.h > 0, "width and height must be > 0"
   assert zoom > 0.3, "zoom must be > 0.0"
   assert zoom < 4.0, "zoom must be < 10.0"
   assert angle >= 0.0 and angle <= 360.0, "angle must be between 0.0 and 360.0"
-
+  
   if zoom != 1.0:
     d.w = (d.w.float * zoom).cint
     d.h = (d.h.float * zoom).cint
+
+  let camera = getCamera()
+  d.w = (d.w.float * getCamZoom()).cint
+  d.h = (d.h.float * getCamZoom()).cint
+
+  # todo: apply the camera position on x and y
+  # todo: also dont draw if the image is not in the camera view
+  let screenX = nimLoveContext.getWindowWidth().cint
+  let screenY = nimLoveContext.getWindowHeight().cint
+  let paddingXInPixels: int = image.width
+  let paddingYInPixels: int = image.height 
+  let inView 
+    = if 
+      d.x * camera.zoom.cint + d.w * camera.zoom.cint < camera.x.cint - paddingXInPixels or
+      d.x * camera.zoom.cint > camera.x.cint + screenX + paddingXInPixels or
+      d.y * camera.zoom.cint + d.h * camera.zoom.cint < camera.y.cint - paddingYInPixels or
+      d.y * camera.zoom.cint > camera.y.cint + screenY + paddingYInPixels
+    : false 
+    else: true
+  if not inView:
+    return
+
+  # apply the camera position on x and y
+  d.x = (d.x.float * getCamZoom()).cint - camera.x.cint
+  d.y = (d.y.float * getCamZoom()).cint - camera.y.cint
 
   var imagePartRect: Rect ##  display only part of the image
   imagePartRect.x = if start_drawing_x == 0: 0 else: cint start_drawing_x
@@ -84,6 +111,10 @@ proc draw*(
   imagePartRect.h = if end_drawing_y == 0: image.height.cint else: cint end_drawing_y
 
   # apply alpha blend mode
+
+  # get the nimlove camera
+
+
 
   nimLoveContext.renderer.copyEx image.texture, addr imagePartRect, addr d, angle.cdouble, nil, SDL_FLIP_NONE
 
