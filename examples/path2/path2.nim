@@ -2,6 +2,7 @@ import std/[random, options, math, heapqueue, tables]
 
 import ../../src/nimlove as nimlove
 import ../../src/nimlove/map
+import ../../src/nimlove/image
 
 const WindowWidth = 800
 const WindowHeight = 600
@@ -25,10 +26,9 @@ type MyGameTile* = ref object
 proc isSelected*(t: MyGameTile): bool = return t.selected
 proc isPassable*(t: MyGameTile): bool = return t.passable
 
-var m = newMap[MyGameTile](
+var m: Map[GameTile] = newMap[MyGameTile](
     sideLenInChunks= 1,
-    createGameTileCallback
-      = proc(
+    createGameTileCallback = proc(
         m: Map[MyGameTile], 
         chunk: Chunk[MyGameTile], 
         tile: Tile[MyGameTile]
@@ -39,6 +39,7 @@ var m = newMap[MyGameTile](
         t.selected = false
         return t 
 )
+
 let textures = map.getMapTextures()
 
 var astarLogs: seq[string] = @[]
@@ -46,13 +47,13 @@ var astarLogs: seq[string] = @[]
 template yieldIfNotNone[T: GameTile](option: Option[Tile[T]])= 
   if option.isSome: yield option.get
 
-iterator getNeighboursDirect*[T: GameTile](m: var Map[T], xnum, ynum: int): Tile[T] =
+iterator getNeighboursDirect*[T: GameTile](m: map.Map[T], xnum, ynum: int): Tile[T] =
   yieldIfNotNone[T] m.getTileAtNum(xnum, ynum-1)
   yieldIfNotNone[T] m.getTileAtNum(xnum, ynum+1)
   yieldIfNotNone[T] m.getTileAtNum(xnum+1, ynum)
   yieldIfNotNone[T] m.getTileAtNum(xnum-1, ynum)
 
-iterator getNeighboursVertical*[T: GameTile](m: var Map[T], xnum, ynum: int): Tile[T] =
+iterator getNeighboursVertical*[T: GameTile](m: map.Map[T], xnum, ynum: int): Tile[T] =
   for n in getNeighboursDirect(m, xnum, ynum): yield n
     
   yieldIfNotNone[T] m.getTileAtNum(xnum+1, ynum+1)
@@ -75,8 +76,9 @@ type
         ]
       ] 
 
+
 proc heuristicCostEstimate*[T: GameTile](
-  m: Map[T], 
+  m: map.Map[T], 
   next, startNode, endNode: Tile[T],
   current: tuple[node: Tile[T], priority: float, cost: float],
   cameFrom: CheckedAndCameFromTable[T] 
@@ -84,16 +86,18 @@ proc heuristicCostEstimate*[T: GameTile](
   # todo: optimize later
   return getDirectCosts(m, startNode, endNode)
 
+
 iterator getAStarPath*[T: GameTile](
-  m: var Map[T], 
+  m: map.Map[T], 
   startNodePos, endNodePos: tuple[xInPixel:int,yInPixel:int]
 ): Tile[T] = 
+  
   let optionStart = m.getTileAt(startNodePos.xInPixel, startNodePos.yInPixel)
   let optionEnd = m.getTileAt(endNodePos.xInPixel, endNodePos.yInPixel)
   
   if optionStart.isNone or optionEnd.isNone: 
     astarLogs.add("start or end tile is None, returning empty path")
-    return
+    #yield nil
   
   let startNode = optionStart.get
   let endNode = optionEnd.get
@@ -116,7 +120,7 @@ iterator getAStarPath*[T: GameTile](
       # TODO: return path
       #for node in backtrack(cameFrom, start, goal):
       #  yield node
-      break
+      #break
 
     for nextTile in getNeighboursDirect(map, currentNode.node.xNum, currentNode.node.yNum):
 
@@ -144,11 +148,20 @@ iterator getAStarPath*[T: GameTile](
         toCheckPrioQueue.push( (nextTile, priority, cost) )
 
 
+var paths: seq[Tile[MyGameTile]] = @[]
 
+# paths from left to right
+let startNodePos = (xInPixel: 0, yInPixel: 0)
+let endNodePos = (xInPixel: 300, yInPixel: 0)
+for t in m.getAStarPath(startNodePos, endNodePos):
+  paths.add(t)
 
 nimlove.runProgramm(
   onUpdate= proc(deltaTime: float) = 
     m.drawMap()
+    for t in paths:
+      let texture = textures["ball_blue"]
+      texture.draw(t.x, t.y)
   ,
   onKeyDown= proc(key: NimLoveKey) = discard,
   onKeyUp= proc(key: NimLoveKey) = discard,

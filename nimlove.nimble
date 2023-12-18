@@ -12,6 +12,7 @@ srcDir        = "src"
 # Dependencies
 
 requires "nim >= 1.6.0"
+# not needed, if we switch to the official stdlib-binaryheap
 # https://github.com/Nycto/AStarNim
 requires "binaryheap"
 # https://github.com/nim-lang/sdl2

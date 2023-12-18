@@ -91,6 +91,14 @@ proc renderer*(context: NimLoveContext): RendererPtr =
   ## Used by image/eimage.
   return context.renderer
 
+proc getWindowWidth*(context: NimLoveContext): int =
+  ## Returns the width of the window.
+  return context.WindowWidth
+
+proc getWindowHeight*(context: NimLoveContext): int =
+  ## Returns the height of the window.
+  return context.WindowHeight
+
 
 proc newNimLoveContext(
   WindowWidth: int = 800,
@@ -100,6 +108,8 @@ proc newNimLoveContext(
 ): NimLoveContext =
   ## Creates new nim love context.
   ## Called by setupNimLove() proc.
+  runnableExamples:
+    var lol = 13
 
   result = NimLoveContext()
   # https://stackoverflow.com/questions/33393528/how-to-get-screen-size-in-sdl
@@ -140,7 +150,22 @@ proc newNimLoveContext(
     discard setFullscreen(result.window, SDL_WINDOW_FULLSCREEN_DESKTOP) # todo: handle error
 
   # load the basic font
-  var font = openFont(cstring(ABSOLUTE_PATH & "font.ttf"), 12)
+  # check the root directory and the "baseassets" directory
+  # TODO: LOAD MUCH MORE FONTS AND FONTSIZES ... 
+  let possibleFontPath1 = ABSOLUTE_PATH & "font.ttf"
+  let possibleFontPath2 = ABSOLUTE_PATH & "baseassets/font.ttf"
+
+  var font: FontPtr
+  if fileExists(possibleFontPath1):
+    echo "load font from " & possibleFontPath1
+    font = openFont(cstring(possibleFontPath1), 12)
+  elif fileExists(possibleFontPath2):
+    echo "load font from " & possibleFontPath2
+    font = openFont(cstring(possibleFontPath2), 12)
+  else:
+    raise SDLException.newException(
+      "Could not find font.ttf in " & ABSOLUTE_PATH
+    )
 
   sdlFailIf font.isNil: "font could not be created"
   #close font

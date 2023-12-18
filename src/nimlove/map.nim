@@ -16,6 +16,10 @@ type
   X = int 
   Y = int
 
+  Direction* = enum
+    Up, Down, Left, Right
+    UpLeft, UpRight, DownLeft, DownRight
+
   GameTile* = concept C 
     ## Basic concept for the objects the user can inject into the map
     C.isPassable() is bool
@@ -30,6 +34,12 @@ type
     plannedTravelWeight: float  ## How many units plan to cross this tile
     gameTile: T ## the object the user can inject into the map
     map: Map[T] ## the map this tile belongs to
+    enclosed: bool ## This is set to true if the tile is surrounded by non passable tiles
+    # todo: also we need a ways to check for what faction this is enclosed.
+    # PROBLEM what if it is closed between chunks?
+    # well: man muss nur die nachbar chunks die non passable tiles haben die an eigene 
+    # grenzen flooden muss!
+
 
 
   Chunk*[T: GameTile] = ref object
@@ -54,8 +64,6 @@ type
 var tileTextures: Table[string, TextureAtlasTexture]
 
 
-
-
 #################################################################################
 #
 #
@@ -67,6 +75,7 @@ var tileTextures: Table[string, TextureAtlasTexture]
 #
 #
 #################################################################################
+
 ####
 ## GAMETILE
 ####
@@ -119,9 +128,69 @@ proc drawTile[T:GameTile](self: Tile[T]) =
 proc `$`*[T:GameTile](self: Chunk[T]): string = 
     return "Chunk: " & $self.x & "," & $self.y
 
+template yieldIfNotNone[T: GameTile](option: Option[Tile[T]])= 
+  if option.isSome: yield option.get
+
+iterator getNeighboursDirect[T: GameTile](m: map.Map[T], xnum, ynum: int): Tile[T] =
+  yieldIfNotNone[T] m.getTileAtNum(xnum, ynum-1)
+  yieldIfNotNone[T] m.getTileAtNum(xnum, ynum+1)
+  yieldIfNotNone[T] m.getTileAtNum(xnum+1, ynum)
+  yieldIfNotNone[T] m.getTileAtNum(xnum-1, ynum)
+
+iterator getNeighboursVertical[T: GameTile](m: map.Map[T], xnum, ynum: int): Tile[T] =  
+  yieldIfNotNone[T] m.getTileAtNum(xnum+1, ynum+1)
+  yieldIfNotNone[T] m.getTileAtNum(xnum+1, ynum-1)
+  yieldIfNotNone[T] m.getTileAtNum(xnum-1, ynum+1)
+  yieldIfNotNone[T] m.getTileAtNum(xnum-1, ynum-1)
 
 
+proc getTilesThatAreCornersOfNonPassableTileCollections*[T:GameTile](self: Chunk[T]): set[Tile[T]] = 
+    ## The problem is that we need to walk around the non passable tiles
+    ## So we need to feed all the corners into the astar algorithm
+    ## 
+    ## 1. If a tile is non pasable get all the vertical neighbours
+    ## 
+    ## 2. Dont push them if they are non passable
+    ## 
+    ## 2. Dont push them if they are diretcly connected to a non passalbe node THAT
+    ##    is alspo directly connected to the current node (which is at this point determined
+    ##    to be also non passable)
+    ##      
+    ## 
+    var corners = set[Tile[T]]() 
+    for tile in self.tiles:
+        if not tile.isPassable():
+            for neighbour in self.map.getNeighboursVertical(tile.xNum, tile.yNum):
+                if neighbour.isPassable():
+                    corners.add(neighbour) 
 
+    
+    return corners
+
+proc determineEnclosedChunks*[T:GameTile](self:Chunk[T]) = 
+    ## This determines the enclosed chunks and marks them as such.
+    ## It marks all tiles as enclosed, that are passable but have a non passable 
+    ## Also chunks that have neightbouring non passalbe tiles are used in the calculation 
+    ## BUT only the ones of the chunk called on this function are marked as enclosed
+    ## In case there are chunks that are torally enclosed we need to call 
+    ## collect totally enclosed chunks after all chunks are computed
+    
+proc determineTotallyIfEnclosed*[T:GameTile](self:Chunk[T]) =
+    ## If all fields that are passable around this chunk
+    ## are enclosed, then this chunk is totally enclosed
+
+proc canYouGetThroughTheChunk*[T:GameTile](self:Chunk[T], direction: Direction) = 
+    ## To determine if we can get from one chunk to another we need to check
+    ## if we can get from one chunk to another: we need to check to go through
+    ## so we dont check if we can get into one, but we need to check if we can
+    ## get through one into the next 
+    ## 
+    ## ------------  ------------  ------------
+    ## |          |  |          |  |          |
+    ## |         -------------------->??      |
+    ## |          |  |          |  |          |
+    ## |          |  |          |  |          |
+    ## ------------  ------------  ------------
 
 #################################################################################
 #
@@ -418,7 +487,8 @@ proc getMapTextures*(): Table[string, TextureAtlasTexture] =
     return tileTextures
 
 
-
+proc distanceIsOne*[T:GameTile](a,b: Tile[T]): bool = 
+    return abs(a.xNum - b.xNum) + abs(a.yNum - b.yNum) == 1
 
 
 #################################################################################
@@ -466,21 +536,15 @@ proc calcHeuristic[T: GameTile] (
     next, start, goal: Tile[T],
     current: FrontierElem[T],
     cameFrom: Table[Tile[T], CameFrom[T]],
-): float {.inline.} =
-    ## Delegates the heuristic call off to the matching function
-    when compiles(graph.heuristic(next, start, goal, current.node)):
-        return graph.heuristic(next, start, goal, current.node)
-
-    elif compiles(graph.heuristic(next, start, goal, current.node, none(T))):
-        var grandparent: Option[T]
-        if cameFrom.hasKey(current.node):
-            grandparent = some[T]( `[]`(cameFrom, current.node).node )
-        else:
-            grandparent = none(T)
-        return graph.heuristic(next, start, goal, current.node, grandparent)
-
-    else:
+): float = 
+    # check if current node is connected to the next node
+    # if not, add a penalty to the heuristic
+    #if next 
+    if distanceIsOne(current.node, next):
         return graph.heuristic(next, goal)
+    else:
+        return 1000.0 + graph.heuristic(next, goal)
+    return graph.heuristic(next, goal)
 
 
 var allVisitedDebug*: seq[tuple[x:int,y:int]] = @[]
@@ -522,7 +586,11 @@ iterator path*[T: GameTile](graph: Chunk[T], start, goal: Tile[T]): Tile[T] =
 
             # If we haven't seen this point already, or we found a cheaper
             # way to get to that
-            if not cameFrom.hasKey(next) or cost < `[]`(cameFrom, next).cost:
+            if 
+                not cameFrom.hasKey(next) or 
+                cost < `[]`(cameFrom, next).cost and 
+                distanceIsOne(current.node, next)
+            :
 
                 # Add this node to the backtrack map
                 `[]=`(cameFrom, next, (node: current.node, cost: cost))
