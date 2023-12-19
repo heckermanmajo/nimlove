@@ -274,6 +274,9 @@ var mouseLeftClickThisFrame: bool = false
 var mouseMiddleClickThisFrame: bool = false
 var mouseScrollUpThisFrame: bool = false
 var mouseScrollDownThisFrame: bool = false
+var mouseLeftUpThisFrame = false
+var mouseRightUpThisFrame = false
+var mouseMiddleUpThisFrame = false
 
 proc getMouseX*(): int = return mouseX
 proc getMouseY*(): int = return mouseY
@@ -282,6 +285,9 @@ proc getMouseLeftClickThisFrame*(): bool = return mouseLeftClickThisFrame
 proc getMouseMiddleClickThisFrame*(): bool = return mouseMiddleClickThisFrame
 proc getMouseScrollUpThisFrame*(): bool = return mouseScrollUpThisFrame
 proc getMouseScrollDownThisFrame*(): bool = return mouseScrollDownThisFrame
+proc getMouseLeftUpThisFrame*(): bool = return mouseLeftUpThisFrame
+proc getMouseRightUpThisFrame*(): bool = return mouseRightUpThisFrame
+proc getMouseMiddleUpThisFrame*(): bool = return mouseMiddleUpThisFrame
 
 proc mouseIsOver*(x: int, y: int, width: int, height: int): bool =
   ## Returns true if the mouse is over the given rectangle.
@@ -370,6 +376,9 @@ proc runProgramm*(
     mouseMiddleClickThisFrame = false
     mouseScrollUpThisFrame = false
     mouseScrollDownThisFrame = false
+    mouseLeftUpThisFrame = false
+    mouseRightUpThisFrame = false
+    mouseMiddleUpThisFrame = false
 
     var event = defaultEvent
     while pollEvent(event):
@@ -410,6 +419,9 @@ proc runProgramm*(
         of MouseButtonUp:
           currentMouseEventWasConsumedVar = false
           onMouseUp(event.button.x, event.button.y)
+          if event.button.button == sdl2.BUTTON_RIGHT: mouseRightUpThisFrame = true
+          if event.button.button == sdl2.BUTTON_LEFT: mouseLeftUpThisFrame = true
+          if event.button.button == sdl2.BUTTON_MIDDLE: mouseMiddleUpThisFrame = true
 
         of MouseMotion:
           currentMouseEventWasConsumedVar = false

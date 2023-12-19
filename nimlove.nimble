@@ -39,7 +39,8 @@ let runnableExamples = @[
   "astar_ex",
   "pathfind",
   "intro",
-  "path2"
+  "path2",
+  "mousemiddle"
 ]
 
 task r, "run the game":
