@@ -1,6 +1,6 @@
 # idobjects: Game or simulation-objects...
 import std/[tables, json]
-import ../nimlove  # TODO: WHY IS THIS NEEDED?? -> teh tests give weird errors without it
+import ../nimlove  # We need ABSOLUTE_PATH
 #[
 WEIRD ERROR:
 
@@ -31,9 +31,9 @@ Expected one of (first mismatch at [position]):
 type IdObject* = concept C
     isDeleted(C) is bool ## deleted does not mean deleted from memory, since they are pooled
     setBackToUndeleted(C)
-    updateEachFrame(C)
+    updateEachFrame(C,float)
 
-type IdObjectContainer*[T: IdObject] = object
+type IdObjectContainer*[T: IdObject] = ref object
   instances: tables.Table[int, T] ## todo: add getter
   instancesAsSequence: seq[T]
   currentUpdateFrame: int
@@ -52,7 +52,7 @@ proc `%`*[T](id: Id[T]): JsonNode =
     "__value__": $id.int,
   }.toTable
 
-proc getId*[T](node: JsonNode): Id[T] =
+proc getId*[T: IdObject](node: JsonNode): Id[T] =
   if node.kind != JObject:
     raise newException(ValueError, "Expected JObject, got: " & $node.kind)
   case node["__version__"].getStr:
@@ -65,13 +65,13 @@ proc getId*[T](node: JsonNode): Id[T] =
   else:
     raise newException(ValueError, "Unknown version for parsing nimlove JSON-Id-Node: " & $node)
 
-proc numberOfInstances*[T](self: IdObjectContainer[T]): int =
+proc numberOfInstances*[T: IdObject](self: IdObjectContainer[T]): int =
   return self.instances.len
 
-proc numberOfDeletedInstances*[T](self: IdObjectContainer[T]): int =
+proc numberOfDeletedInstances*[T: IdObject](self: IdObjectContainer[T]): int =
   return self.instancesAsSequence.len - self.instances.len
 
-proc insert*[T](self: var IdObjectContainer[T], obj: T): Id[T] =
+proc insert*[T: IdObject](self: var IdObjectContainer[T], obj: T): Id[T] =
   # todo: check taht if the id is already in the container set not to 0
   #       then we just add it to the container without giving ist a new id 
   #   this happens when we add loaded objects to the container whiche we
@@ -81,22 +81,22 @@ proc insert*[T](self: var IdObjectContainer[T], obj: T): Id[T] =
   self.instancesAsSequence.add obj 
   return Id[T](lastId)
 
-proc get*[T](self: IdObjectContainer[T], id: Id[T]): T =
+proc get*[T: IdObject](self: IdObjectContainer[T], id: Id[T]): T =
   return self.instances[id.int]
 
-proc exists*[T](self: IdObjectContainer[T], id: Id[T]): bool =
+proc exists*[T: IdObject](self: IdObjectContainer[T], id: Id[T]): bool =
   return self.instances.hasKey(id.int)
 
-proc existsAndActive*[T](self: IdObjectContainer[T], id: Id[T]): bool =
+proc existsAndActive*[T: IdObject](self: IdObjectContainer[T], id: Id[T]): bool =
   if not self.instances.hasKey(id.int):
     return false
   return not self.instances[id.int].isDeleted
 
-proc updateAll*[T](self: IdObjectContainer[T]) =
+proc updateAll*[T: IdObject](self: IdObjectContainer[T]) =
     for obj in self.instancesAsSequence:
       obj.updateEachFrame()
     
-proc writeAllIdObjectsToFile*[T](self: IdObjectContainer[T], filePath: string) =
+proc writeAllIdObjectsToFile*[T: IdObject](self: IdObjectContainer[T], filePath: string) =
   let path 
     = if filePath.endsWith("/"): ABSOLUTE_PATH & filePath
       else: ABSOLUTE_PATH & "/"  & filePath
@@ -107,7 +107,7 @@ proc writeAllIdObjectsToFile*[T](self: IdObjectContainer[T], filePath: string) =
   for obj in self.instancesAsSequence:file.writeLine(%obj)
   file.close()
 
-proc readAllIdObjectsFromFile*[T](
+proc readAllIdObjectsFromFile*[T: IdObject](
   self: var IdObjectContainer[T], 
   filePath: string,
   readCallback: proc(jsonValue: string): T

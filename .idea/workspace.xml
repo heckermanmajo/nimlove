@@ -5,9 +5,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="52fc974e-0fa2-4892-aab9-95c7d9ff372a" name="Changes" comment="tiles, animation, mouse and concept all over the place">
-      <change beforePath="$PROJECT_DIR$/examples/performance/performance.nim" beforeDir="false" afterPath="$PROJECT_DIR$/examples/performance/performance.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/mousemiddle/mousemiddle.nim" beforeDir="false" afterPath="$PROJECT_DIR$/examples/mousemiddle/mousemiddle.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/path2/path2.nim" beforeDir="false" afterPath="$PROJECT_DIR$/examples/path2/path2.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/pixel/pixel.nim" beforeDir="false" afterPath="$PROJECT_DIR$/examples/pixel/pixel.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/serialisation/serialisation.nim" beforeDir="false" afterPath="$PROJECT_DIR$/examples/serialisation/serialisation.nim" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/nimlove.nimble" beforeDir="false" afterPath="$PROJECT_DIR$/nimlove.nimble" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/editor/src/editor" beforeDir="false" afterPath="$PROJECT_DIR$/proto/editor/src/editor" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/editor/src/editor.nim" beforeDir="false" afterPath="$PROJECT_DIR$/proto/editor/src/editor.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/rts1/soldier.png" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/nimlove.nim" beforeDir="false" afterPath="$PROJECT_DIR$/src/nimlove.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/nimlove/camera.nim" beforeDir="false" afterPath="$PROJECT_DIR$/src/nimlove/camera.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/nimlove/idobject.nim" beforeDir="false" afterPath="$PROJECT_DIR$/src/nimlove/idobject.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/nimlove/image.nim" beforeDir="false" afterPath="$PROJECT_DIR$/src/nimlove/image.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/nimlove/map.nim" beforeDir="false" afterPath="$PROJECT_DIR$/src/nimlove/map.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/nimlove/private/eimage.nim" beforeDir="false" afterPath="$PROJECT_DIR$/src/nimlove/private/eimage.nim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structure.png" beforeDir="false" afterPath="$PROJECT_DIR$/structure.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/todo.txt" beforeDir="false" afterPath="$PROJECT_DIR$/todo.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,6 +118,7 @@
       <workItem from="1702207257385" duration="2000" />
       <workItem from="1702291278021" duration="599000" />
       <workItem from="1702477381490" duration="65000" />
+      <workItem from="1703092556039" duration="243000" />
     </task>
     <task id="LOCAL-00001" summary="tiles, animation, mouse and concept all over the place">
       <option name="closed" value="true" />

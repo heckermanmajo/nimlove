@@ -30,7 +30,7 @@ proc newEditableImage*(relativePath: string): EditableImage =
   ## Create a new editable image from a file.
   ## The path is relative to the executable.
   let nimLoveContext = getNimLoveContext()
-  result = EditableImage()
+  var result = EditableImage()
   if not relativePath.endsWith(".png"):
     raise newException(NimBrokenHeartError, "Editable images must be png files.")
   let surface = load((ABSOLUTE_PATH & relativePath).cstring)
@@ -38,7 +38,8 @@ proc newEditableImage*(relativePath: string): EditableImage =
   result.height = surface.h.int
   sdlFailIf surface.isNil: "could not load image " & ABSOLUTE_PATH & relativePath
   result.surface = surface
-
+  return result
+  
 type PixelValue* = object
   ## A pixel value is a color with an alpha value.
   ## It is used to set and get pixels of an EditableImage.
@@ -64,7 +65,12 @@ let
   PixelValueDarkGreen* = PixelValue(r : 0, g: 100, b: 0, a: 255)
   PixelValueDarkRed* = PixelValue(r : 139, g: 0, b: 0, a: 255)
   PixelValueDarkOrange* = PixelValue(r : 255, g: 140, b: 0, a: 255)
-  # todo: add more colors
+  PixelValueIgnorePink* = PixelValue(r : 238, g: 0, b: 246, a: 255)
+
+  PixelValueTransparent* = PixelValue(r : 0, g: 0, b: 0, a: 0)
+
+    # todo: add more colors
+
 
 proc `$`*(self: PixelValue): string =
   return "pv(" & $self.r & ", " & $self.g & ", " & $self.b & "; " & $self.a & ")"
@@ -84,6 +90,7 @@ proc setPixel*(eImage: var EditableImage, x, y: int, pixelValue: PixelValue) =
   let pixelAddress2: ptr uint32 = cast[ptr uint32](pixelAddress)
   let format: uint32 = sdl2.getPixelFormat( nimLoveContext.window );
   # TODO: THIS CAN CAUSE HARM
+  # SDL_PIXELFORMAT_ABGR8888
   let mappingFormat: ptr PixelFormat = sdl2.allocFormat( SDL_PIXELFORMAT_ABGR8888 );
   # TODO: It is the bad format, since it "removes the right pixels at the right place but they are just empty"
   discard sdl2.lockSurface(eImage.surface)
@@ -118,8 +125,8 @@ proc getPixel*(eImage: EditableImage, x, y: int): PixelValue =
   else:
     echo "unknown format: ", format  
     ]#
-
-  let mappingFormat: ptr PixelFormat = sdl2.allocFormat( format );
+  #format
+  let mappingFormat: ptr PixelFormat = sdl2.allocFormat( SDL_PIXELFORMAT_ABGR8888 );
   let pixelCast = (cast[ptr PixelFormat](surface.format))
   let bytesPerPixel: int = pixelCast.BytesPerPixel.int
   let pixelOffset: int = y * surface.pitch.int + x * bytesPerPixel
@@ -139,7 +146,7 @@ proc getPixel*(eImage: EditableImage, x, y: int): PixelValue =
   result.g = g
   result.b = b
   result.a = a
-  echo result
+  #echo result
   return result
 
 proc replaceColor*(eImage: var EditableImage, oldColor: PixelValue, newColor: PixelValue) =

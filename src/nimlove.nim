@@ -191,6 +191,17 @@ proc getNimLoveContext*(): NimLoveContext =
   return nimLoveContext.get
 
 
+proc getWindowWidth*(): int =
+  ## Returns the width of the window.
+  let context = getNimLoveContext()
+  return context.WindowWidth
+
+proc getWindowHeight*(): int =
+  ## Returns the height of the window.
+  let context = getNimLoveContext()
+  return context.WindowHeight
+
+
 proc setupNimLove*(
     windowWidth: int = 800,
     windowHeight: int = 600,

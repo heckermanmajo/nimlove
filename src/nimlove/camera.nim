@@ -4,7 +4,7 @@
 ## You can register a camera to specific images, textureatlases and sounds.
 ## Also to the map.
 ## A camera is always as big as the screen.
-
+import ../nimlove
 import std/json 
 
 # todo: add max zoom and min zoom
@@ -14,6 +14,8 @@ type Camera* = ref object
     zoom: float
     x: float
     y: float
+    zoomCorrectionX: float
+    zoomCorrectionY: float
 
 proc newCamera*(zoom: float = 1.0): Camera =
     result = Camera(zoom:zoom, x:0.0, y:0.0)
@@ -22,10 +24,22 @@ proc zoom*(camera: Camera): float =
     camera.zoom
 
 proc zoomIn*(camera: Camera) =
-    camera.zoom += 0.1
+    let screenWidth = nimlove.getWindowWidth().float
+    let screenHeight = nimlove.getWindowHeight().float
+    camera.zoom += 0.03
+    camera.zoomCorrectionX = (camera.zoom - 0.03) * screenWidth / 2
+    camera.zoomCorrectionY = (camera.zoom - 0.03) * screenHeight / 2
+    # move camera to center of screen
+    # if we zoom in, we need to 
+    
+
 
 proc zoomOut*(camera: Camera) =
+    let screenWidth = nimlove.getWindowWidth().float
+    let screenHeight = nimlove.getWindowHeight().float
     camera.zoom -= 0.1
+    camera.zoomCorrectionX = (camera.zoom + 0.1) * screenWidth / 2
+    camera.zoomCorrectionY = (camera.zoom + 0.1) * screenHeight / 2
 
 proc move*(camera: Camera, x, y: float) =
     camera.x += x
@@ -44,10 +58,16 @@ proc setY*(camera: Camera, y: float) =
     camera.y = y
 
 proc x*(camera: Camera): float =
-    camera.x
+    camera.x# + camera.zoomCorrectionX
 
 proc y*(camera: Camera): float =
-    camera.y
+    camera.y# + camera.zoomCorrectionY
+
+proc zoomCorrectionX*(camera: Camera): float =
+    camera.zoomCorrectionX
+
+proc zoomCorrectionY*(camera: Camera): float =
+    camera.zoomCorrectionY
 
 proc changeZoom*(camera: Camera, zoom: float) =
     camera.zoom = zoom

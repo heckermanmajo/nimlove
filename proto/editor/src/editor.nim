@@ -65,11 +65,14 @@ var selectedMap = createDefaultMap()
 nimlove.runProgramm proc(deltaTime: float) =
   selectedMap.drawMap()
   drawText("Hello editor", 12,12)
-  drawText( &"{camera.getCamera().x}" , 100, 100, color=Red)
+  drawText( &"camera.x: {camera.getCamera().x}" , 100, 100, color=Red)
+  drawText( &"camera.y: {camera.getCamera().y}" , 100, 120, color=Red)
+  drawText( &"camera.zoom: {camera.getCamera().zoom}" , 100, 140, color=Red)
+  # zoom correction
+  drawText( &"camera.zoomCorrectionX {camera.getCamera().zoomCorrectionX}" , 100, 160, color=Red)
+  drawText( &"camera.zoomCorrectionY {camera.getCamera().zoomCorrectionY}" , 100, 180, color=Red)
+
   if getMouseLeftClickThisFrame(): camera.getCamera().moveX(-2)
   if getMouseRightClickThisFrame(): camera.getCamera().moveX(2)
   if getMouseScrollDownThisFrame(): camera.getCamera().zoomOut()
   if getMouseScrollUpThisFrame(): camera.getCamera().zoomIn()
-
-
-

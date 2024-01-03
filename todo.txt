@@ -6,6 +6,6 @@
 - Scenes: Diable/anable Logic and Rendering
   - Just a blueprint for some logic stuff and code organisation
 
-- DrawGroups: apply zoom on all elements fo draw groups
+- DrawGroups: apply zoom on all elements for draw groups
   - bascailly collections
 

@@ -47,6 +47,15 @@ type
     lols: seq[string]
     lols2: Table[string, Id[GameObjectB]]
 
+# We need to implement the IdObject-concept for our GameObjects
+
+proc isDeleted*(self: GameObjectA): bool = false
+proc setBackToUndeleted*(self: GameObjectA) = discard
+proc updateEachFrame*(self: GameObjectA, deltaTime: float) = discard
+
+proc isDeleted*(self: GameObjectB): bool = false
+proc setBackToUndeleted*(self: GameObjectB) = discard
+proc updateEachFrame*(self: GameObjectB, deltaTime:float) = discard
 
 proc `%`*(self: GameObjectA) : JsonNode =
   result = % {
@@ -125,15 +134,7 @@ proc GameObjectBFromJson*(node: JsonNode) : GameObjectB =
       = if node["option3"].isNil: none(Id[GameObjectA]) 
       else: some(getId[GameObjectA] node["option3"])
 
-# We need to implement the IdObject-concept for our GameObjects
 
-proc isDeleted*(self: GameObjectA): bool = false
-proc setBackToUndeleted*(self: GameObjectA) = discard
-proc updateEachFrame*(self: GameObjectA) = discard
-
-proc isDeleted*(self: GameObjectB): bool = false
-proc setBackToUndeleted*(self: GameObjectB) = discard
-proc updateEachFrame*(self: GameObjectB) = discard
 
 
 

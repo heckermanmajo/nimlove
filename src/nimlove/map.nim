@@ -60,6 +60,8 @@ type
     tiles: Table[X, Table[Y, Tile[T]]]
     tilesAsList: seq[Tile[T]]
     chunks: Table[X, Table[Y, Chunk[T]]]
+    sideLenInChunksX: int
+    sideLenInChunksY: int
 
 
 var tileTextures: Table[string, TextureAtlasTexture]
@@ -111,6 +113,11 @@ proc initMapTextures*() =
         textures["ball_white"] = all[12]
         textures["ball_light_blue"] = all[14]
         textures["ball_blue"] = all[15]
+        textures["gras"] = all[22]
+        textures["sand"] = all[23]
+        textures["tundra"] = all[24]
+        textures["dirt"] = all[25]
+        textures["water"] = all[26]
         textures 
 
     module_initCalled = true # allows to check if init was called
@@ -294,7 +301,8 @@ proc newChunk*[T:GameTile](
 
 
 proc newMap*[T:GameTile](
-    sideLenInChunks: int, 
+    sideLenInChunksX: int, 
+    sideLenInChunksY: int,
     createGameTileCallback: proc(m: Map[T], chunk: Chunk[T], tile: Tile[T]): T, 
     chunkSizeInTiles:int = 16,
     tileSizeInPixels:int = 32,
@@ -302,12 +310,14 @@ proc newMap*[T:GameTile](
     result= Map[T]()
     result.chunkSizeInTiles = chunkSizeInTiles
     result.tileSizeInPixels = tileSizeInPixels
+    result.sideLenInChunksX = sideLenInChunksX
+    result.sideLenInChunksY = sideLenInChunksY
     result.tiles = initTable[X, Table[Y, Tile[T]]]()
     result.tilesAsList = @[]
     result.chunks = initTable[X, Table[Y, Chunk[T]]]()
-    for x in 0 ..< sideLenInChunks:
+    for x in 0 ..< sideLenInChunksX:
         result.chunks[x] = initTable[Y, Chunk[T]]()
-        for y in 0 ..< sideLenInChunks:
+        for y in 0 ..< sideLenInChunksY:
             var chunk = newChunk[T](result, x, y, createGameTileCallback)
             result.chunks[x][y] = chunk
             chunk.map = result

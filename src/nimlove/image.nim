@@ -162,7 +162,7 @@ proc draw*(tat: TextureAtlasTexture, x: int,y: int, zoom: float = 1, angle: floa
   ## Render the texture atlas texture on the screen.
   draw tat.image, x, y, tat.textureWidth, tat.textureHeight, angle, zoom, 255, tat.textureStartX, tat.textureStartY, tat.textureWidth, tat.textureHeight
 
-type Animation = ref object
+type Animation* = ref object
   ## This is the animation object that is mapped 1:1 to the
   ## animated game object.
   frames: seq[TextureAtlasTexture]
