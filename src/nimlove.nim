@@ -23,6 +23,8 @@
 # TODO: load multiple fonts by string
 # TODO: add setBackgroundColor procs
  
+{.experimental: "strictDefs".}
+
 # and the nim sdl2 wrapper installed
 import sdl2 ## import the offical nim sdl2 wrapper package
 import sdl2/[ttf, mixer] 
@@ -34,6 +36,8 @@ import nimlove/private/keys
 import nimlove/private/colors
 export keys
 export colors
+
+
 
 # defect is a special type of object that is used to throw exceptions
 # defect can on some compiler settings not be catched -> it should crash the program

@@ -1,7 +1,7 @@
-import std/[tables, os, strutils, options]
+import std/[strutils]
 
 import sdl2 ## import the offical nim sdl2 wrapper package
-import sdl2/[mixer, ttf, image] 
+import sdl2/[image] 
 
 import ../../nimlove as nl
 
@@ -29,7 +29,7 @@ proc height*(eImage: EditableImage): int = return eImage.height
 proc newEditableImage*(relativePath: string): EditableImage =
   ## Create a new editable image from a file.
   ## The path is relative to the executable.
-  let nimLoveContext = getNimLoveContext()
+  let _ = getNimLoveContext()
   result = EditableImage()
   if not relativePath.endsWith(".png"):
     raise newException(NimBrokenHeartError, "Editable images must be png files.")
@@ -71,7 +71,7 @@ proc `$`*(self: PixelValue): string =
 
 proc setPixel*(eImage: var EditableImage, x, y: int, pixelValue: PixelValue) =
   ## Set a pixel of an EditableImage to the given PixelValue.
-  let nimLoveContext = getNimLoveContext()
+  let _ = getNimLoveContext()
   let surface: ptr Surface = eImage.surface
   let pixelCast = (cast[ptr PixelFormat](surface.format))
   # echo getPixelFormatName(cast[uint32](surface.format))
@@ -82,7 +82,7 @@ proc setPixel*(eImage: var EditableImage, x, y: int, pixelValue: PixelValue) =
 
   let pixelAddress: ptr uint8 = cast[ptr uint8](cast[int](cast[ptr uint8](surface.pixels)) + pixelOffset)
   let pixelAddress2: ptr uint32 = cast[ptr uint32](pixelAddress)
-  let format: uint32 = sdl2.getPixelFormat( nimLoveContext.window );
+  #let format: uint32 = sdl2.getPixelFormat( nimLoveContext.window );
   # TODO: THIS CAN CAUSE HARM
   let mappingFormat: ptr PixelFormat = sdl2.allocFormat( SDL_PIXELFORMAT_ABGR8888 );
   # TODO: It is the bad format, since it "removes the right pixels at the right place but they are just empty"
@@ -144,7 +144,7 @@ proc getPixel*(eImage: EditableImage, x, y: int): PixelValue =
 
 proc replaceColor*(eImage: var EditableImage, oldColor: PixelValue, newColor: PixelValue) =
   ## Replace all pixels of an EditableImage that have the oldColor with the newColor.
-  let nimLoveContext = getNimLoveContext()
+  let _ = getNimLoveContext()
   for y in 0..eImage.height-1:
     for x in 0..eImage.width-1:
       if getPixel(eImage, x, y) == oldColor:
