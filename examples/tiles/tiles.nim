@@ -33,7 +33,7 @@ let yellowOutline = newTextureAtlasTexture(
 # todo: other colors
 
 
-type Camera = object
+type Camera = object 
   x, y: int
 
 # camera movement

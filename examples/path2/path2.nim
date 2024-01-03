@@ -121,18 +121,19 @@ iterator getAStarPath*[T: GameTile](
       #for node in backtrack(cameFrom, start, goal):
       #  yield node
       #break
+      discard
 
-    for nextTile in getNeighboursDirect(map, currentNode.node.xNum, currentNode.node.yNum):
+    for nextTile in getNeighboursDirect[T](m, currentNode.node.xNum, currentNode.node.yNum):
 
       # The cost of moving into this node from the goal
-      let cost: float = currentNode.cost + getDirectCosts(map, currentNode.node, nextTile)
+      let cost: float = currentNode.cost + getDirectCosts(m, currentNode.node, nextTile)
 
       # If we haven't seen this point already, or we found a cheaper
       # way to get to that
-      if not checkedAndCameFromTable.hasKey(nextTile) or cost < checkedAndCameFromTable[nextTile].cost:
+      if not checkedAndCameFromTable.hasKey(nextTile) or cost < checkedAndCameFromTable[nextTile].costToReachItFromHere:
 
         # Add this node to the backtrack map
-        checkedAndCameFromTable[nextTile] = (node: currentNode.node, cost: cost)
+        checkedAndCameFromTable[nextTile] = (fromWhichWeReachedIt: currentNode.node, costToReachItFromHere: cost)
 
         # Estimate the priority of checking this node
         let priority: float = cost + heuristicCostEstimate(
