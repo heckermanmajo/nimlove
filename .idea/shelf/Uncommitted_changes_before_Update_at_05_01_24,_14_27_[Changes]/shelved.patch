@@ -1,0 +1,342 @@
+Index: src/nimlove.nim
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>## Nimlove 0.1\n## \n## @Author:  Marvin Knapp-Tietz\n## \n## Nimlove is a simple 2D game library for nim inspired by the love2d for lua.\n## But it is much simpler.\n## \n## If you want to go crazy use sdl2, but if you want get started quickly\n## and do some fun game-dev in nim, nimlove is for you.\n## \n## Its focus is simplicity and ease of use (and beeing fast if possible).\n## \n## - make sure to have sdl2 installed on your system\n## \n## \n## ADD serialize and deserialize procs for all nimlove types \n\n# TODO: comment everything\n# TODO: add saving images \n# TODO: draw a pixel, line, rect, circle, triangle, procs\n# TODO: add debug logs that can be turned on and off -> into a nimlove.log file\n# TODO: set mutliple cursors\n# TODO: load multiple fonts by string\n# TODO: add setBackgroundColor procs\n \n# and the nim sdl2 wrapper installed\nimport sdl2 ## import the offical nim sdl2 wrapper package\nimport sdl2/[ttf, mixer] \n\n# import standard library modules -> they are part of the nim compiler\nimport std/[tables, os, options]\n\nimport nimlove/private/keys\nimport nimlove/private/colors\nexport keys\nexport colors\n\n# defect is a special type of object that is used to throw exceptions\n# defect can on some compiler settings not be catched -> it should crash the program\ntype SDLException* = object of Defect\n  ## This exception is thrown when an SDL2 function fails.\n  \ntype NimBrokenHeartError* = object of Defect\n  ## This exception is thrown when nimlove has some internal errors\n  ## f.e. the NimLoveContext is not initialized but a proc needs it\n\nlet ABSOLUTE_PATH* = os.getAppDir() & \"/\" ## \\\n  ## The absolute path to the directory of the executable. \\\n  ## This is neccecary to load images and fonts. Since\n  ## all images and fonts are loaded from the directory of the executable.\n\ntemplate sdlFailIf*(condition: typed, reason: string) =\n  # todo: learn more about templates, so we can describe this function\n  if condition: raise SDLException.newException(\n    reason & \", SDL error \" & $getError()\n  )\n\n\n\n##############################################\n#\n# NimLoveContext\n#\n##############################################\n\n\ntype NimLoveContext* = object of RootObj\n  ## The NimLoveContext is the main object that\n  ## is passed into the main loop of the program.\n  ## It contains the renderer and window objects\n  ## and provides some helper procedures.\n  renderer: RendererPtr\n  window: WindowPtr\n  WindowWidth: int\n  WindowHeight: int\n  Title: string\n  font: FontPtr\n\nproc font*(context: NimLoveContext): FontPtr =\n  ## Returns the default font.\n  ## The default font is used by the drawText() proc.\n  return context.font\n\nproc window*(context: NimLoveContext): WindowPtr =\n  ## Returns the window object.\n  ## Used by image/eimage.\n  return context.window\n\nproc renderer*(context: NimLoveContext): RendererPtr =\n  ## Returns the renderer object.\n  ## Used by image/eimage.\n  return context.renderer\n\nproc getWindowWidth*(context: NimLoveContext): int =\n  ## Returns the width of the window.\n  return context.WindowWidth\n\nproc getWindowHeight*(context: NimLoveContext): int =\n  ## Returns the height of the window.\n  return context.WindowHeight\n\n\nproc newNimLoveContext(\n  WindowWidth: int = 800,\n  WindowHeight: int = 600,\n  Title: string = \"NimLove\",\n  fullScreen: bool = false,\n): NimLoveContext =\n  ## Creates new nim love context.\n  ## Called by setupNimLove() proc.\n  runnableExamples:\n    var lol = 13\n\n  result = NimLoveContext()\n  # https://stackoverflow.com/questions/33393528/how-to-get-screen-size-in-sdl\n  # TODO: if width and height are -1 use the screen size\n  result.WindowWidth = WindowWidth\n  result.WindowHeight = WindowHeight\n  result.Title = Title\n  \n  # image.init(IMG_INIT_PNG)\n  result.window = createWindow(\n    title = Title.cstring,\n    x = SDL_WINDOWPOS_CENTERED,\n    y = SDL_WINDOWPOS_CENTERED,\n    w = WindowWidth.cint,\n    h = WindowHeight.cint,\n    flags = SDL_WINDOW_SHOWN\n\n  )\n  sdlFailIf result.window.isNil: \"window could not be created\"\n\n  result.renderer =  createRenderer(\n    window = result.window,\n    index = -1,\n    flags = Renderer_TargetTexture\n  )\n  # Renderer_Accelerated or Renderer_PresentVsync or\n  sdlFailIf result.renderer.isNil: \"renderer could not be created\"\n\n  sdlFailIf(not ttfInit()): \"SDL_TTF initialization failed\"\n\n  result.renderer.setDrawColor toSdlColor(colors.Color 0)\n\n  clear(result.renderer)\n\n  # setTitle(result.window, Title)\n  if fullScreen:\n    echo \"Try to set game to fullscreen\"\n    discard setFullscreen(result.window, SDL_WINDOW_FULLSCREEN_DESKTOP) # todo: handle error\n\n  # load the basic font\n  # check the root directory and the \"baseassets\" directory\n  # TODO: LOAD MUCH MORE FONTS AND FONTSIZES ... \n  let possibleFontPath1 = ABSOLUTE_PATH & \"font.ttf\"\n  let possibleFontPath2 = ABSOLUTE_PATH & \"baseassets/font.ttf\"\n\n  var font: FontPtr\n  if fileExists(possibleFontPath1):\n    echo \"load font from \" & possibleFontPath1\n    font = openFont(cstring(possibleFontPath1), 12)\n  elif fileExists(possibleFontPath2):\n    echo \"load font from \" & possibleFontPath2\n    font = openFont(cstring(possibleFontPath2), 12)\n  else:\n    raise SDLException.newException(\n      \"Could not find font.ttf in \" & ABSOLUTE_PATH\n    )\n\n  sdlFailIf font.isNil: \"font could not be created\"\n  #close font\n  result.font = font\n\n  return result\n\nvar nimLoveContext: Option[NimLoveContext] = NimLoveContext.none ## \\\n    ## The NimLoveContext is a global variable that is initialized by the \\\n    ## setupNimLove() proc. It is used by the other procs to access the \\\n    ## SDL2 context. It is not exported -> lack of asterisk.\n    ## This way we hide the SDL2 context from the user and make it easier \\\n    ## to use the library.\n\nproc getNimLoveContext*(): NimLoveContext =\n  ## Returns the NimLoveContext. If the NimLoveContext is not initialized \\\n  ## it throws a NimBrokenHeartError.\n  ## This proc is used to access the NimLoveContext from other procs.\n  if not nimLoveContext.isSome:\n    raise NimBrokenHeartError.newException(\n      \"NimLoveContext not initialized. Call setupNimLove() first.\"\n    )\n  return nimLoveContext.get\n\n\nproc getWindowWidth*(): int =\n  ## Returns the width of the window.\n  let context = getNimLoveContext()\n  return context.WindowWidth\n\nproc getWindowHeight*(): int =\n  ## Returns the height of the window.\n  let context = getNimLoveContext()\n  return context.WindowHeight\n\n\nproc setupNimLove*(\n    windowWidth: int = 800,\n    windowHeight: int = 600,\n    windowTitle: string = \"NimLove\",\n    fullScreen: bool = false,\n  ) =\n  # set global nimLoveContext\n  echo \"setupNimLove\"\n  nimLoveContext = newNimLoveContext(\n    WindowWidth = windowWidth,\n    WindowHeight = windowHeight,\n    Title = windowTitle,\n    fullScreen = fullScreen,\n  ).some\n\n\n##############################################\n#\n# Init SDL2\n#\n##############################################\n\nsdlFailIf(not sdl2.init(INIT_EVERYTHING)): \"SDL2 initialization failed\"\n\n## audio values \n# todo: comment\nvar audio_rate : cint\nvar audio_format : uint16\nvar audio_buffers : cint    = 4096\nvar audio_channels : cint   = 2\n\nsdlFailIf(\n  mixer.openAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0,\n  \"Could not open audio\"\n)\n\n\n##############################################\n#\n# Internal running values\n#\n##############################################\n\nvar keepRunning = true ## \\\n  ## Set to false to stop the main loop of the program.\\\n  ## Global variable used in the runProgramm() proc. \\\n  ## Not exported -> lack of asterisk.\n\nproc killTheProgram*() =\n  ## Stops the main loop of the program and therefore the program itself.\n  keepRunning = false\n\nvar fps = 0.0 ## The actual Frames Per Second in the last second.\nvar time_in_ms = 0.0 ## The time in milliseconds since the last second.\nvar frame_counter = 0 ## The number of frames since the last second.\nproc getFPS*(): float =\n  ## Returns the current FPS of the program.\n  ## calculated by the runProgramm() proc -> main loop\n  return fps\n\nvar thisFrameWasTenthOfASecond : int = 0  ## from 1 to 10\n\nvar delayCPUWaste = true\nproc setDelayCPUWaste*(value: bool) =\n  ## This makes the program wait for on milisecond after each frame\n  ## IF the FPS is higher than 200. This is to prevent the program\n  ## from using 100% CPU for no work.\n  delayCPUWaste = value\n\nvar sleptMilisecondsPerSecond = 0.0\nvar sleptMilisecondsPerSecondCounter = 0\nproc getSleptMilisecondsPerSecond*(): float =\n  ## Returns the number of miliseconds the program slept in the last second.\n  ## @see setDelayCPUWaste()\n  return sleptMilisecondsPerSecond\n\n\nvar mouseX, mouseY: int = 0\nvar mouseRightClickThisFrame: bool = false\nvar mouseLeftClickThisFrame: bool = false\nvar mouseMiddleClickThisFrame: bool = false\nvar mouseScrollUpThisFrame: bool = false\nvar mouseScrollDownThisFrame: bool = false\nvar mouseLeftUpThisFrame = false\nvar mouseRightUpThisFrame = false\nvar mouseMiddleUpThisFrame = false\n\nproc getMouseX*(): int = return mouseX\nproc getMouseY*(): int = return mouseY\nproc getMouseRightClickThisFrame*(): bool = return mouseRightClickThisFrame\nproc getMouseLeftClickThisFrame*(): bool = return mouseLeftClickThisFrame\nproc getMouseMiddleClickThisFrame*(): bool = return mouseMiddleClickThisFrame\nproc getMouseScrollUpThisFrame*(): bool = return mouseScrollUpThisFrame\nproc getMouseScrollDownThisFrame*(): bool = return mouseScrollDownThisFrame\nproc getMouseLeftUpThisFrame*(): bool = return mouseLeftUpThisFrame\nproc getMouseRightUpThisFrame*(): bool = return mouseRightUpThisFrame\nproc getMouseMiddleUpThisFrame*(): bool = return mouseMiddleUpThisFrame\n\nproc mouseIsOver*(x: int, y: int, width: int, height: int): bool =\n  ## Returns true if the mouse is over the given rectangle.\n  return mouseX >= x and mouseX <= x + width and mouseY >= y and mouseY <= y + height\n\n\n# If we focus for example a text-field, other \n# handler should not consume the input event\n# these functions help to manage input in case \n# of ui\nvar currentKeyEventWasConsumedVar = false\nvar currentMouseEventWasConsumedVar = false\nproc setCurrentKeyEventAsConsumed*() =\n  currentKeyEventWasConsumedVar = false\nproc setCurrentMouseEventAsConsumed*() =\n  currentMouseEventWasConsumedVar = true\nproc currentKeyEventWasConsumed*(): bool =\n  return currentKeyEventWasConsumedVar\nproc currentMouseEventWasConsumed*(): bool =\n  return currentMouseEventWasConsumedVar\n\n\n\n\n##############################################\n#\n# MAIN - LOOP\n#\n##############################################\n\nproc runProgramm*(\n  onUpdate: proc(deltaTime: float) {.closure.},\n  onKeyDown: proc(key: NimLoveKey) {.closure.} = proc(key: NimLoveKey) = discard,\n  onKeyUp: proc(key: NimLoveKey) {.closure.} = proc(key: NimLoveKey) = discard,\n  onMouseDown: proc(x, y: int) {.closure.} = proc(x, y: int) = discard,\n  onMouseUp: proc(x, y: int) {.closure.} = proc(x, y: int) = discard,\n  onMouseMove: proc(x, y: int) {.closure.} = proc(x, y: int) = discard,\n  onMouseScrollUp: proc() {.closure.} = proc() = discard,\n  onMouseScrollDown: proc() {.closure.} = proc() = discard,\n  onQuit: proc() {.closure.} = proc() = discard,\n) =\n  ## Runs the main loop of the program and calls the callback-procs that are passed in\n  ##\n  # todo: document each callback proc\n\n  let nimLoveContext = getNimLoveContext()\n  var now = getTicks()\n  thisFrameWasTenthOfASecond = 1 #  start the system with 1\n  while keepRunning:\n\n    # calculate fps\n    frame_counter += 1\n    time_in_ms += (getTicks() - now).float\n    if time_in_ms > 100 and thisFrameWasTenthOfASecond == 1:\n      thisFrameWasTenthOfASecond = 2\n    elif time_in_ms > 200 and thisFrameWasTenthOfASecond == 2:\n      thisFrameWasTenthOfASecond = 3\n    elif time_in_ms > 300 and thisFrameWasTenthOfASecond == 3:\n      thisFrameWasTenthOfASecond = 4\n    elif time_in_ms > 400 and thisFrameWasTenthOfASecond == 4:\n      thisFrameWasTenthOfASecond = 5\n    elif time_in_ms > 500 and thisFrameWasTenthOfASecond == 5:\n      thisFrameWasTenthOfASecond = 6\n    elif time_in_ms > 600 and thisFrameWasTenthOfASecond == 6:\n      thisFrameWasTenthOfASecond = 7\n    elif time_in_ms > 700 and thisFrameWasTenthOfASecond == 7:\n      thisFrameWasTenthOfASecond = 8\n    elif time_in_ms > 800 and thisFrameWasTenthOfASecond == 8:\n      thisFrameWasTenthOfASecond = 9\n    elif time_in_ms > 900 and thisFrameWasTenthOfASecond == 9:\n      thisFrameWasTenthOfASecond = 10\n    elif time_in_ms < 100 and thisFrameWasTenthOfASecond == 10:\n      thisFrameWasTenthOfASecond = 1\n\n    if time_in_ms >= 1000.0:\n      fps = frame_counter.float / (time_in_ms / 1000.0)\n      time_in_ms = 0.0\n      frame_counter = 0\n\n    let newNow = getTicks()\n    let deltaTime = (newNow - now).float / 1000.0\n    now = newNow\n\n    mouseRightClickThisFrame = false\n    mouseLeftClickThisFrame = false\n    mouseMiddleClickThisFrame = false\n    mouseScrollUpThisFrame = false\n    mouseScrollDownThisFrame = false\n    mouseLeftUpThisFrame = false\n    mouseRightUpThisFrame = false\n    mouseMiddleUpThisFrame = false\n\n    var event = defaultEvent\n    while pollEvent(event):\n\n      case event.kind\n\n        of QuitEvent:\n          keepRunning = false\n          break\n\n        of KeyDown:\n          currentKeyEventWasConsumedVar = false\n          onKeyDown(sdlScancodeToNimLoveKeyEnum(event.key.keysym.scancode))\n          if event.key.keysym.scancode == SDL_SCANCODE_ESCAPE:\n            keepRunning = false\n            break\n          #if event.key.keysym.scancode == SDL_SCANCODE_A:\n          #  echo \"A pressed\"\n          #  break\n\n        of KeyUp:\n          # echo \"key up\"\n          currentKeyEventWasConsumedVar = false\n          onKeyUp(sdlScancodeToNimLoveKeyEnum(event.key.keysym.scancode)) \n\n        # paste?\n        of TextInput:\n          # echo \"text input\"\n          echo event.text.text\n        \n        of MouseButtonDown:\n          currentMouseEventWasConsumedVar = false\n          onMouseDown(event.button.x, event.button.y)\n          if event.button.button == sdl2.BUTTON_RIGHT: mouseRightClickThisFrame = true\n          if event.button.button == sdl2.BUTTON_LEFT: mouseLeftClickThisFrame = true\n          if event.button.button == sdl2.BUTTON_MIDDLE: mouseMiddleClickThisFrame = true\n\n        of MouseButtonUp:\n          currentMouseEventWasConsumedVar = false\n          onMouseUp(event.button.x, event.button.y)\n          if event.button.button == sdl2.BUTTON_RIGHT: mouseRightUpThisFrame = true\n          if event.button.button == sdl2.BUTTON_LEFT: mouseLeftUpThisFrame = true\n          if event.button.button == sdl2.BUTTON_MIDDLE: mouseMiddleUpThisFrame = true\n\n        of MouseMotion:\n          currentMouseEventWasConsumedVar = false\n          onMouseMove(event.motion.x, event.motion.y)\n          mouseX = event.motion.x\n          mouseY = event.motion.y\n\n        of MouseWheel:\n          currentMouseEventWasConsumedVar = false\n          if event.wheel.y > 0: \n            mouseScrollUpThisFrame = true\n            onMouseScrollUp()\n          if event.wheel.y < 0: \n            mouseScrollDownThisFrame = true\n            onMouseScrollDown()\n\n        else:\n          # todo: handle other events\n          discard\n\n    onUpdate deltaTime  # the users update function for each tick\n   \n    # draw fps\n    # todo: text should be the first parameter\n    #drawText(\n    #  0, 0,\n    #  \"FPS: \" & $fps,\n    #  30,\n   #   White\n   # )\n\n    present(nimLoveContext.renderer)\n    clear(nimLoveContext.renderer)\n    nimLoveContext.renderer.setDrawColor toSdlColor(Green)\n    nimLoveContext.renderer.fillRect(nil)\n\n    # TODO: STH seems wrong here ...\n    if delayCPUWaste:\n      if getFPS() > 60.0: \n        delay(1)\n        sleptMilisecondsPerSecondCounter += 1\n      if thisFrameWasTenthOfASecond == 10:\n        sleptMilisecondsPerSecond = sleptMilisecondsPerSecondCounter.float\n        sleptMilisecondsPerSecondCounter = 0\n\n  onQuit() # the user can handle the end of the program\n\n  mixer.closeAudio()\n  ttfQuit()\n  nimLoveContext.renderer.destroy()\n  nimLoveContext.window.destroy()\n  sdl2.quit()
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/nimlove.nim b/src/nimlove.nim
+--- a/src/nimlove.nim	(revision 98b8b9ca269d77d113065d25b7e0603c63512bcd)
++++ b/src/nimlove.nim	(date 1704277337472)
+@@ -23,6 +23,8 @@
+ # TODO: load multiple fonts by string
+ # TODO: add setBackgroundColor procs
+  
++{.experimental: "strictDefs".}
++
+ # and the nim sdl2 wrapper installed
+ import sdl2 ## import the offical nim sdl2 wrapper package
+ import sdl2/[ttf, mixer] 
+@@ -35,6 +37,8 @@
+ export keys
+ export colors
+ 
++
++
+ # defect is a special type of object that is used to throw exceptions
+ # defect can on some compiler settings not be catched -> it should crash the program
+ type SDLException* = object of Defect
+@@ -472,7 +476,7 @@
+     # TODO: STH seems wrong here ...
+     if delayCPUWaste:
+       if getFPS() > 60.0: 
+-        delay(1)
++        delay(1)  ## TODO: This does not work as intended
+         sleptMilisecondsPerSecondCounter += 1
+       if thisFrameWasTenthOfASecond == 10:
+         sleptMilisecondsPerSecond = sleptMilisecondsPerSecondCounter.float
+Index: .idea/nimlove.iml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/nimlove.iml b/.idea/nimlove.iml
+new file mode 100644
+--- /dev/null	(date 1704461190557)
++++ b/.idea/nimlove.iml	(date 1704461190557)
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<module type="NIM_MODULE" version="4">
++  <component name="NewModuleRootManager">
++    <content url="file://$MODULE_DIR$" />
++    <orderEntry type="sourceFolder" forTests="false" />
++  </component>
++</module>
+\ No newline at end of file
+Index: .idea/modules.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/modules.xml b/.idea/modules.xml
+new file mode 100644
+--- /dev/null	(date 1704461190573)
++++ b/.idea/modules.xml	(date 1704461190573)
+@@ -0,0 +1,8 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="ProjectModuleManager">
++    <modules>
++      <module fileurl="file://$PROJECT_DIR$/.idea/nimlove.iml" filepath="$PROJECT_DIR$/.idea/nimlove.iml" />
++    </modules>
++  </component>
++</project>
+\ No newline at end of file
+Index: src/nimlove/private/eimage.nim
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import std/[tables, os, strutils, options]\n\nimport sdl2 ## import the offical nim sdl2 wrapper package\nimport sdl2/[mixer, ttf, image] \n\nimport ../../nimlove as nl\n\n##############################################\n#\n#\n#\n# Edit Pixels\n#\n#\n#\n##############################################\n\n\ntype EditableImage* = ref object\n  ## Image that can be edited. It cannot be drawn directly but can be\n  ## converted to a NimLoveImage via the makeNormalImage() proc.\n  surface: SurfacePtr ## the sdl2 surface -> the data of the image\n  width: int ## width: int of the image, cannot be changed\n  height: int ## height: int of the image, cannot be changed\n\nproc width*(eImage: EditableImage): int = return eImage.width\nproc height*(eImage: EditableImage): int = return eImage.height\n\nproc newEditableImage*(relativePath: string): EditableImage =\n  ## Create a new editable image from a file.\n  ## The path is relative to the executable.\n  let nimLoveContext = getNimLoveContext()\n  var result = EditableImage()\n  if not relativePath.endsWith(\".png\"):\n    raise newException(NimBrokenHeartError, \"Editable images must be png files.\")\n  let surface = load((ABSOLUTE_PATH & relativePath).cstring)\n  result.width = surface.w.int\n  result.height = surface.h.int\n  sdlFailIf surface.isNil: \"could not load image \" & ABSOLUTE_PATH & relativePath\n  result.surface = surface\n  return result\n  \ntype PixelValue* = object\n  ## A pixel value is a color with an alpha value.\n  ## It is used to set and get pixels of an EditableImage.\n  r*, g*, b*, a*: uint8\n\nproc toUint32*(self: PixelValue): uint32 =\n  return (self.r.uint32 shl 16) or (self.g.uint32 shl 8) or self.b.uint32\n\nlet \n  PixelValueRed* = PixelValue(r : 255, g: 0, b: 0, a: 255)\n  PixelValueGreen* = PixelValue(r : 0, g: 255, b: 0, a: 255)\n  PixelValueBlue* = PixelValue(r : 0, g: 0, b: 255, a: 255)\n  PixelValueBlack* = PixelValue(r : 0, g: 0, b: 0, a: 255)\n  PixelValueWhite* = PixelValue(r : 255, g: 255, b: 255, a: 255)\n  PixelValueYellow* = PixelValue(r : 255, g: 255, b: 0, a: 255)\n  PixelValuePink* = PixelValue(r : 255, g: 0, b: 255, a: 255)\n  PixelValueGray* = PixelValue(r : 128, g: 128, b: 128, a: 255)\n  PixelValueOrange* = PixelValue(r : 255, g: 165, b: 0, a: 255)\n  PixelValueGold* = PixelValue(r : 255, g: 215, b: 0, a: 255)\n  PixelValueDeepPink* = PixelValue(r : 255, g: 20, b: 147, a: 255)\n  PixelValueBlueViolet* = PixelValue(r : 138, g: 43, b: 226, a: 255)\n  PixelValueDarkBlue* = PixelValue(r : 0, g: 0, b: 139, a: 255)\n  PixelValueDarkGreen* = PixelValue(r : 0, g: 100, b: 0, a: 255)\n  PixelValueDarkRed* = PixelValue(r : 139, g: 0, b: 0, a: 255)\n  PixelValueDarkOrange* = PixelValue(r : 255, g: 140, b: 0, a: 255)\n  PixelValueIgnorePink* = PixelValue(r : 238, g: 0, b: 246, a: 255)\n\n  PixelValueTransparent* = PixelValue(r : 0, g: 0, b: 0, a: 0)\n\n    # todo: add more colors\n\n\nproc `$`*(self: PixelValue): string =\n  return \"pv(\" & $self.r & \", \" & $self.g & \", \" & $self.b & \"; \" & $self.a & \")\"\n\nproc setPixel*(eImage: var EditableImage, x, y: int, pixelValue: PixelValue) =\n  ## Set a pixel of an EditableImage to the given PixelValue.\n  let nimLoveContext = getNimLoveContext()\n  let surface: ptr Surface = eImage.surface\n  let pixelCast = (cast[ptr PixelFormat](surface.format))\n  # echo getPixelFormatName(cast[uint32](surface.format))\n  let bytesPerPixel: int = pixelCast.BytesPerPixel.int\n  assert bytesPerPixel == 4\n  assert pixelCast.BitsPerPixel.int == 32\n  let pixelOffset: int = y * surface.pitch + x * bytesPerPixel\n\n  let pixelAddress: ptr uint8 = cast[ptr uint8](cast[int](cast[ptr uint8](surface.pixels)) + pixelOffset)\n  let pixelAddress2: ptr uint32 = cast[ptr uint32](pixelAddress)\n  let format: uint32 = sdl2.getPixelFormat( nimLoveContext.window );\n  # TODO: THIS CAN CAUSE HARM\n  # SDL_PIXELFORMAT_ABGR8888\n  let mappingFormat: ptr PixelFormat = sdl2.allocFormat( SDL_PIXELFORMAT_ABGR8888 );\n  # TODO: It is the bad format, since it \"removes the right pixels at the right place but they are just empty\"\n  discard sdl2.lockSurface(eImage.surface)\n  pixelAddress2[] = sdl2.mapRGBA( \n    format=mappingFormat, \n    r=pixelValue.r, #0xFF, \n    g=pixelValue.g, #0xFF, \n    b=pixelValue.b, #0xFF,\n    a=pixelValue.a #0xFF\n  )\n  \n  sdl2.unlockSurface(eImage.surface)\n\nproc getPixel*(eImage: EditableImage, x, y: int): PixelValue =\n  ## Get the PixelValue of a pixel of an EditableImage.\n  let nimLoveContext = getNimLoveContext()\n  let surface: ptr Surface = eImage.surface\n  let format: uint32 = sdl2.getPixelFormat( nimLoveContext.window );\n  #echo getPixelFormatName(format)\n\n  #[if format == SDL_PIXELFORMAT_RGB888:\n    echo \"SDL_PIXELFORMAT_RGB888\"\n  elif format == SDL_PIXELFORMAT_RGBA8888:\n\n    echo \"SDL_PIXELFORMAT_RGBA8888\"\n  elif format == SDL_PIXELFORMAT_ABGR8888:\n\n    echo \"SDL_PIXELFORMAT_ABGR8888\"\n  elif format == SDL_PIXELFORMAT_BGRA8888:\n\n    echo \"SDL_PIXELFORMAT_BGRA8888\"\n  else:\n    echo \"unknown format: \", format  \n    ]#\n  #format\n  let mappingFormat: ptr PixelFormat = sdl2.allocFormat( SDL_PIXELFORMAT_ABGR8888 );\n  let pixelCast = (cast[ptr PixelFormat](surface.format))\n  let bytesPerPixel: int = pixelCast.BytesPerPixel.int\n  let pixelOffset: int = y * surface.pitch.int + x * bytesPerPixel\n  let pixelAddress: ptr uint8 = cast[ptr uint8](cast[int](surface.pixels) + pixelOffset)\n  let pixelAddress2: ptr uint32 = cast[ptr uint32](pixelAddress)\n  let pixelValue: uint32 = pixelAddress2[]\n  #echo \"pixelValue: \", pixelValue\n \n  #[\n    proc getPixelFormatName*(format: uint32): cstring {.\n  importc: \"SDL_GetPixelFormatName\".}\n  ]#\n  var r,g,b,a: uint8\n  sdl2.getRGBA(pixelValue.uint32, mappingFormat, r, g, b, a)\n  result = PixelValue()\n  result.r = r\n  result.g = g\n  result.b = b\n  result.a = a\n  #echo result\n  return result\n\nproc replaceColor*(eImage: var EditableImage, oldColor: PixelValue, newColor: PixelValue) =\n  ## Replace all pixels of an EditableImage that have the oldColor with the newColor.\n  let nimLoveContext = getNimLoveContext()\n  for y in 0..eImage.height-1:\n    for x in 0..eImage.width-1:\n      if getPixel(eImage, x, y) == oldColor:\n        setPixel(eImage, x, y, newColor)\n\nproc surface*(eImage: EditableImage) :SurfacePtr =\n  return eImage.surface
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/nimlove/private/eimage.nim b/src/nimlove/private/eimage.nim
+--- a/src/nimlove/private/eimage.nim	(revision 98b8b9ca269d77d113065d25b7e0603c63512bcd)
++++ b/src/nimlove/private/eimage.nim	(date 1704461239599)
+@@ -1,7 +1,7 @@
+-import std/[tables, os, strutils, options]
++import std/[strutils]
+ 
+ import sdl2 ## import the offical nim sdl2 wrapper package
+-import sdl2/[mixer, ttf, image] 
++import sdl2/[image]
+ 
+ import ../../nimlove as nl
+ 
+@@ -29,7 +29,7 @@
+ proc newEditableImage*(relativePath: string): EditableImage =
+   ## Create a new editable image from a file.
+   ## The path is relative to the executable.
+-  let nimLoveContext = getNimLoveContext()
++  let _ = getNimLoveContext()
+   var result = EditableImage()
+   if not relativePath.endsWith(".png"):
+     raise newException(NimBrokenHeartError, "Editable images must be png files.")
+@@ -39,7 +39,7 @@
+   sdlFailIf surface.isNil: "could not load image " & ABSOLUTE_PATH & relativePath
+   result.surface = surface
+   return result
+-  
++
+ type PixelValue* = object
+   ## A pixel value is a color with an alpha value.
+   ## It is used to set and get pixels of an EditableImage.
+@@ -77,7 +77,7 @@
+ 
+ proc setPixel*(eImage: var EditableImage, x, y: int, pixelValue: PixelValue) =
+   ## Set a pixel of an EditableImage to the given PixelValue.
+-  let nimLoveContext = getNimLoveContext()
++  let _ = getNimLoveContext()
+   let surface: ptr Surface = eImage.surface
+   let pixelCast = (cast[ptr PixelFormat](surface.format))
+   # echo getPixelFormatName(cast[uint32](surface.format))
+@@ -88,7 +88,7 @@
+ 
+   let pixelAddress: ptr uint8 = cast[ptr uint8](cast[int](cast[ptr uint8](surface.pixels)) + pixelOffset)
+   let pixelAddress2: ptr uint32 = cast[ptr uint32](pixelAddress)
+-  let format: uint32 = sdl2.getPixelFormat( nimLoveContext.window );
++  #let format: uint32 = sdl2.getPixelFormat( nimLoveContext.window );
+   # TODO: THIS CAN CAUSE HARM
+   # SDL_PIXELFORMAT_ABGR8888
+   let mappingFormat: ptr PixelFormat = sdl2.allocFormat( SDL_PIXELFORMAT_ABGR8888 );
+@@ -151,7 +151,7 @@
+ 
+ proc replaceColor*(eImage: var EditableImage, oldColor: PixelValue, newColor: PixelValue) =
+   ## Replace all pixels of an EditableImage that have the oldColor with the newColor.
+-  let nimLoveContext = getNimLoveContext()
++  let _ = getNimLoveContext()
+   for y in 0..eImage.height-1:
+     for x in 0..eImage.width-1:
+       if getPixel(eImage, x, y) == oldColor:
+Index: examples/tiles/tiles.nim
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import ../../src/nimlove as nimlove\nimport ../../src/nimlove/[image]\nimport std/tables\n\nconst WindowWidth = 1900\nconst WindowHeight = 1200\n\nnimlove.setupNimLove(\n  windowWidth = WindowWidth,\n  windowHeight = WindowHeight,\n  windowTitle = \"NimLove\",\n  fullScreen = false,\n)\n\nlet tileAtlas = newImage(\"tiles.png\")\n\nlet gray = newTextureAtlasTexture(\n  image=tileAtlas,\n  textureStartX=5*32,\n  textureStartY=0,\n  textureWidth=32,\n  textureHeight=32,\n)\n\nlet yellowOutline = newTextureAtlasTexture(\n  image=tileAtlas,\n  textureStartX=4*32,\n  textureStartY=0,\n  textureWidth=32,\n  textureHeight=32,\n)\n\n# todo: other colors\n\n\ntype Camera = object\n  x, y: int\n\n# camera movement\n# highlight functions -> welche tiles werden wie gehighlighted??\n\n#setDelayCPUWaste(false)\n\nnimlove.runProgramm proc(delta_time: float) =\n  tileAtlas.draw(0, 0)\n\n  for i in 0..(WindowWidth div 32):\n    for j in 0..(WindowHeight div 32):\n      gray.draw(i*32, j*32)\n\n  for i in 0..(WindowWidth div 32):\n    for j in 0..(WindowHeight div 32):\n      yellowOutline.draw(i*32, j*32)
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/examples/tiles/tiles.nim b/examples/tiles/tiles.nim
+--- a/examples/tiles/tiles.nim	(revision 98b8b9ca269d77d113065d25b7e0603c63512bcd)
++++ b/examples/tiles/tiles.nim	(date 1704275804040)
+@@ -33,7 +33,7 @@
+ # todo: other colors
+ 
+ 
+-type Camera = object
++type Camera = object 
+   x, y: int
+ 
+ # camera movement
+Index: examples/worldmap/worldmap.nim
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import std/[json, strutils, strformat]\nimport ../../src/nimlove as nimlove\nimport ../../src/nimlove/[image, map]\n\nconst WindowWidth = 800\nconst WindowHeight = 600\n\nnimlove.setupNimLove(\n  windowWidth = WindowWidth,\n  windowHeight = WindowHeight,\n  windowTitle = \"NimLove - empty game test\",\n  fullScreen = false,\n)\nmap.initMapTextures()\nvar worldMap = newEditableImage(\"worldmap.png\")\n# green\nworldMap.replaceColor(PixelValue(r:106, g:190, b:48, a:255), PixelValueRed)\n# green border\nworldMap.replaceColor(PixelValue(r:54, g:143, b:96, a:255), PixelValueRed)\n# blue water\nworldMap.replaceColor(PixelValue(r:91, g:110, b:225, a:255), PixelValueBlue)\n\nproc isWater*(p: PixelValue): bool = return p == PixelValueBlue\nproc isLand*(p: PixelValue): bool = return p == PixelValueRed\n\ntype \n  TileType* = enum\n    Water, Land\n    \n  MyGameTile* = ref object\n    passable: bool\n    selected: bool\n    tileType: TileType\n    building: int\n\n\nvar textures = map.getMapTextures()\nvar myTexture = textures[\"TileType.Water\"]\n\nproc isSelected*(t: MyGameTile): bool = return t.selected\nproc isPassable*(t: MyGameTile): bool = return t.passable\n\nproc draw*(t: MyGameTile, x, y: int) = \n  if t.tileType == TileType.Water:\n    \n    \n  else:\n    map.drawTile(TileType.Land, x, y)\n\n\nproc `%`*(t: TileType): JsonNode = \n  case t\n  of TileType.Water: return %\"Water\"\n  of TileType.Land: return %\"Land\"\n\n\n\n\nvar myMap = newMap[MyGameTile](\n    sideLenInChunksX= 32, \n    sideLenInChunksY= 16,\n    createGameTileCallback= proc(m: Map[MyGameTile], chunk: Chunk[MyGameTile], tile: Tile[MyGameTile]): MyGameTile =\n      result = new(MyGameTile)\n      echo &\"tile.xNum: {tile.xNum}, tile.yNum: {tile.yNum}\"\n      let pixelToReadX = tile.xNum\n      let pixelToReadY = tile.yNum\n      if pixelToReadX > 1024:\n        echo \"pixelToReadX > 1024\"\n        quit(-1)\n      if pixelToReadY > 512:\n        echo pixelToReadY\n        echo \"pixelToReadY > 512\"\n        quit(-1)\n\n      if isWater(worldMap.getPixel(pixelToReadX, pixelToReadY)):\n        result.tileType = TileType.Water\n      else:\n        result.tileType = TileType.Land\n\n      result.passable = true\n      result.selected = false\n      result.building = 0\n    , \n    chunkSizeInTiles = 32,\n    tileSizeInPixels = 32,\n)\n\n\nlet mapAsImage = worldMap.makeImageFromEImage()\n\nnimlove.runProgramm(\n  onUpdate= proc(deltaTime: float) = \n    #mapAsImage.draw(0, 0)\n    myMap.drawMap()\n  ,\n  onKeyDown= proc(key: NimLoveKey) = discard,\n  onKeyUp= proc(key: NimLoveKey) = discard,\n  onMouseDown= proc(x, y: int) = discard,\n  onMouseUp= proc(x, y: int) = discard,\n  onMouseMove= proc(x, y: int) = discard,\n  onMouseScrollUp= proc() = discard,\n  onMouseScrollDown= proc() = discard,\n  onQuit= proc() = discard,\n)\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/examples/worldmap/worldmap.nim b/examples/worldmap/worldmap.nim
+--- a/examples/worldmap/worldmap.nim	(revision 98b8b9ca269d77d113065d25b7e0603c63512bcd)
++++ b/examples/worldmap/worldmap.nim	(date 1704276489925)
+@@ -1,4 +1,4 @@
+-import std/[json, strutils, strformat]
++import std/[json, strutils, strformat, tables]
+ import ../../src/nimlove as nimlove
+ import ../../src/nimlove/[image, map]
+ 
+@@ -34,18 +34,20 @@
+     building: int
+ 
+ 
+-var textures = map.getMapTextures()
+-var myTexture = textures["TileType.Water"]
++var textures = getMapTextures()
++var water = textures["water"]
++var land = textures["gras"]
+ 
+ proc isSelected*(t: MyGameTile): bool = return t.selected
+ proc isPassable*(t: MyGameTile): bool = return t.passable
+ 
+ proc draw*(t: MyGameTile, x, y: int) = 
+   if t.tileType == TileType.Water:
+-    
+-    
++    # TODO
++    discard
+   else:
+-    map.drawTile(TileType.Land, x, y)
++    #map.drawTile(TileType.Land, x, y)
++    discard
+ 
+ 
+ proc `%`*(t: TileType): JsonNode = 
+Index: todo.md
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/todo.md b/todo.md
+new file mode 100644
+--- /dev/null	(date 1704277922073)
++++ b/todo.md	(date 1704277922073)
+@@ -0,0 +1,9 @@
++# TODO-LIST
++
++- Nimlove-core: all useful no BS
++
++
++
++- FIX PATH-FINDING
++When is the lib ready to use??
++- V. 1.0?
+\ No newline at end of file
+Index: README.md
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># NimLove(2d) WIP!!\n\n!(pss.png)[Popel Schnipsing Studios]\n\nMy attempt to create a \"forever-enviroment\" for 2d games.\n\nInstall sdl2 on your system via package manager.\n\n    sudo apt install libsdl2-dev libsdl2-2.0-0 -y;\n\n    sudo apt install libjpeg-dev libwebp-dev libtiff5-dev libsdl2-image-dev libsdl2-image-2.0-0 -y;\n\n    sudo apt install libmikmod-dev libfishsound1-dev libsmpeg-dev liboggz2-dev libflac-dev libfluidsynth-dev libsdl2-mixer-dev libsdl2-mixer-2.0-0 -y;\n\n    sudo apt install libfreetype6-dev libsdl2-ttf-dev libsdl2-ttf-2.0-0 -y;\n    \n    wget -qO - https://nim-lang.org/choosenim/init.sh | sh \n\n    git clone https://github.com/heckermanmajo/nimlove\n\n    cd nimlove\n\n    nimble install  # install dependencies (sdl2)\n\n    nimble compall\n\n    nimble rall\n\n\nhttps://sanderfrenken.github.io/Universal-LPC-Spritesheet-Character-Generator/#?body=Body_color_light&head=Human_male_light\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/README.md b/README.md
+--- a/README.md	(revision 98b8b9ca269d77d113065d25b7e0603c63512bcd)
++++ b/README.md	(date 1704279275248)
+@@ -2,8 +2,51 @@
+ 
+ !(pss.png)[Popel Schnipsing Studios]
+ 
+-My attempt to create a "forever-enviroment" for 2d games.
++My attempt to create my "forever-enviroment" for 2d games.
++
++The goal is to be as simple as love 2d, but with even less stuff than love2d.
++
++So i want good and simple UI,
++a working Map with pathfinding and chunking,
++a soulution for serialisation,
++and simple physics.
++
++## Current Features
++- Display images
++- Play sounds
++- Draw text
++- animations
++- read from texture atlases
++- TOP-DOWN-Map with chunks (for a side scroller you need to implement your own)
++- buttons
++- TOP-DOWN-Camera (zoom and scroll)
++- Object management & super simplistic serialisation
++- screen logger
++- pathfinding (WIP)
+ 
++## Future Features
++- MUCH MORE UI
++- Collision-Concept
++- Drawable-Concept
++- Draw primitives
++- simple physics
++
++## Use this in production?
++Well no, not now. BUT: Since it is not much code and very well documented
++you can use this as a base for your own game with sdl. 
++But really, if you want to create a professional game, you would 
++probably just use the nim-sdl2 lib directly.
++
++## Multiplayer?
++Well, if you want multiplayer and dont know how to code 
++proper: forget it, do yourself a favor and get some single 
++player stuff done first (except learning multiplayer is the stated 
++goal, instead of making a game).
++Nimlove does not provide any multiplayer functionality, but 
++you can easily add it from other libraries and use it togehter.
++
++
++## Installation (ubuntu)
+ Install sdl2 on your system via package manager.
+ 
+     sudo apt install libsdl2-dev libsdl2-2.0-0 -y;
+@@ -14,6 +57,7 @@
+ 
+     sudo apt install libfreetype6-dev libsdl2-ttf-dev libsdl2-ttf-2.0-0 -y;
+     
++    # only if nim is not installed yet:
+     wget -qO - https://nim-lang.org/choosenim/init.sh | sh 
+ 
+     git clone https://github.com/heckermanmajo/nimlove
+@@ -22,9 +66,9 @@
+ 
+     nimble install  # install dependencies (sdl2)
+ 
+-    nimble compall
++    nimble compall   # compile all tests
+ 
+-    nimble rall
++    nimble rall  # run all tests after each other
+ 
+ 
+ https://sanderfrenken.github.io/Universal-LPC-Spritesheet-Character-Generator/#?body=Body_color_light&head=Human_male_light
+Index: examples/path2/path2.nim
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import std/[random, options, math, heapqueue, tables]\n\nimport ../../src/nimlove as nimlove\nimport ../../src/nimlove/map\nimport ../../src/nimlove/image\n\nconst WindowWidth = 800\nconst WindowHeight = 600\n\nnimlove.setupNimLove(\n  windowWidth = WindowWidth,\n  windowHeight = WindowHeight,\n  windowTitle = \"NimLove - empty game test\",\n  fullScreen = false,\n)\n\nmap.initMapTextures()\n\n\ntype MyGameTile* = ref object\n  passable: bool\n  selected: bool\n  tileType: int\n  building: int\n\nproc isSelected*(t: MyGameTile): bool = return t.selected\nproc isPassable*(t: MyGameTile): bool = return t.passable\n\nvar m: Map[GameTile] = newMap[MyGameTile](\n    sideLenInChunksX = 1,\n    sideLenInChunksY = 1,\n    createGameTileCallback = proc(\n        m: Map[MyGameTile], \n        chunk: Chunk[MyGameTile], \n        tile: Tile[MyGameTile]\n      ): MyGameTile = \n        let t = new(MyGameTile)\n        t.passable = true\n        #t.passable = if rand(100) < 15: false else: true\n        t.selected = false\n        return t \n)\n\nlet textures = map.getMapTextures()\n\nvar astarLogs: seq[string] = @[]\n\ntemplate yieldIfNotNone[T: GameTile](option: Option[Tile[T]])= \n  if option.isSome: yield option.get\n\niterator getNeighboursDirect*[T: GameTile](m: map.Map[T], xnum, ynum: int): Tile[T] =\n  yieldIfNotNone[T] m.getTileAtNum(xnum, ynum-1)\n  yieldIfNotNone[T] m.getTileAtNum(xnum, ynum+1)\n  yieldIfNotNone[T] m.getTileAtNum(xnum+1, ynum)\n  yieldIfNotNone[T] m.getTileAtNum(xnum-1, ynum)\n\niterator getNeighboursVertical*[T: GameTile](m: map.Map[T], xnum, ynum: int): Tile[T] =\n  for n in getNeighboursDirect(m, xnum, ynum): yield n\n    \n  yieldIfNotNone[T] m.getTileAtNum(xnum+1, ynum+1)\n  yieldIfNotNone[T] m.getTileAtNum(xnum+1, ynum-1)\n  yieldIfNotNone[T] m.getTileAtNum(xnum-1, ynum+1)\n  yieldIfNotNone[T] m.getTileAtNum(xnum-1, ynum-1)\n\nproc getDirectCosts*[T: GameTile](m: Map[T], startNode, endNode: Tile[T]): float = \n  return sqrt(float(startNode.xnum - endNode.xnum).pow 2 + float(startNode.ynum - endNode.ynum).pow 2)\n\ntype \n  ReachedNode[T:GameTile] \n    = Tile[T]\n  CheckedAndCameFromTable[T:GameTile] \n    = Table[\n        ReachedNode[T], \n        tuple[\n          fromWhichWeReachedIt:Tile[T],\n          costToReachItFromHere: float\n        ]\n      ] \n\n\nproc heuristicCostEstimate*[T: GameTile](\n  m: map.Map[T], \n  next, startNode, endNode: Tile[T],\n  current: tuple[node: Tile[T], priority: float, cost: float],\n  cameFrom: CheckedAndCameFromTable[T] \n): float = \n  # todo: optimize later\n  return getDirectCosts(m, startNode, endNode)\n\n\niterator getAStarPath*[T: GameTile](\n  m: map.Map[T], \n  startNodePos, endNodePos: tuple[xInPixel:int,yInPixel:int]\n): Tile[T] = \n  \n  let optionStart = m.getTileAt(startNodePos.xInPixel, startNodePos.yInPixel)\n  let optionEnd = m.getTileAt(endNodePos.xInPixel, endNodePos.yInPixel)\n  \n  if optionStart.isNone or optionEnd.isNone: \n    astarLogs.add(\"start or end tile is None, returning empty path\")\n    #yield nil\n  \n  let startNode = optionStart.get\n  let endNode = optionEnd.get\n\n  # open set is the algo-frontier: what nodes to check next -> \n  # therefore priority queue\n  var toCheckPrioQueue\n    : HeapQueue[tuple[node: Tile[T], priority: float, cost: float]]\n\n  # A map of backreferences. After getting to the goal, you use this to walk\n  # backwards through the path and ultimately find the reverse path\n  var checkedAndCameFromTable: CheckedAndCameFromTable[T]\n\n\n  while toCheckPrioQueue.len > 0:\n\n    var currentNode: tuple[node: Tile[T], priority: float, cost: float] = toCheckPrioQueue.pop()\n\n    if currentNode.node == endNode:\n      # TODO: return path\n      #for node in backtrack(cameFrom, start, goal):\n      #  yield node\n      #break\n      discard\n\n    for nextTile in getNeighboursDirect(m, currentNode.node.xNum, currentNode.node.yNum):\n\n      # The cost of moving into this node from the goal\n      let cost: float = currentNode.cost + getDirectCosts(m, currentNode.node, nextTile)\n\n      # If we haven't seen this point already, or we found a cheaper\n      # way to get to that\n      if not checkedAndCameFromTable.hasKey(nextTile) or cost < checkedAndCameFromTable[nextTile].costToReachItFromHere:\n\n        # Add this node to the backtrack map\n        checkedAndCameFromTable[nextTile] = (fromWhichWeReachedIt: currentNode.node, costToReachItFromHere: cost)\n\n        # Estimate the priority of checking this node\n        let priority: float = cost + heuristicCostEstimate(\n          m, \n          nextTile, \n          startNode, \n          endNode, \n          currentNode, \n          checkedAndCameFromTable \n        )\n\n        # Also add it to the frontier so we check out its neighbors\n        toCheckPrioQueue.push( (nextTile, priority, cost) )\n\n\nvar paths: seq[Tile[MyGameTile]] = @[]\n\n# paths from left to right\nlet startNodePos = (xInPixel: 0, yInPixel: 0)\nlet endNodePos = (xInPixel: 300, yInPixel: 0)\nfor t in m.getAStarPath(startNodePos, endNodePos):\n  paths.add(t)\n\nnimlove.runProgramm(\n  onUpdate= proc(deltaTime: float) = \n    m.drawMap()\n    for t in paths:\n      let texture = textures[\"ball_blue\"]\n      texture.draw(t.x, t.y)\n  ,\n  onKeyDown= proc(key: NimLoveKey) = discard,\n  onKeyUp= proc(key: NimLoveKey) = discard,\n  onMouseDown= proc(x, y: int) = discard,\n  onMouseUp= proc(x, y: int) = discard,\n  onMouseMove= proc(x, y: int) = discard,\n  onMouseScrollUp= proc() = discard,\n  onMouseScrollDown= proc() = discard,\n  onQuit= proc() = discard,\n)\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/examples/path2/path2.nim b/examples/path2/path2.nim
+--- a/examples/path2/path2.nim	(revision 98b8b9ca269d77d113065d25b7e0603c63512bcd)
++++ b/examples/path2/path2.nim	(date 1704461265152)
+@@ -124,7 +124,7 @@
+       #break
+       discard
+ 
+-    for nextTile in getNeighboursDirect(m, currentNode.node.xNum, currentNode.node.yNum):
++    for nextTile in getNeighboursDirect[T](m, currentNode.node.xNum, currentNode.node.yNum):
+ 
+       # The cost of moving into this node from the goal
+       let cost: float = currentNode.cost + getDirectCosts(m, currentNode.node, nextTile)
+Index: examples/pathfind/pathfind.nim
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>echo \"NimLove - empty game test\"\n\nimport std/[tables, options, random]\n\nimport ../../src/nimlove as nimlove\nimport ../../src/nimlove/image\nimport ../../src/nimlove/text\nimport ../../src/nimlove/map\n\n\nrandom.randomize()\n\nconst WindowWidth = 800\nconst WindowHeight = 600\n\nnimlove.setupNimLove(\n  windowWidth = WindowWidth,\n  windowHeight = WindowHeight,\n  windowTitle = \"NimLove - empty game test\",\n  fullScreen = false,\n)\n\nmap.initMapTextures() \n\n\n#[\nhttps://factorio.com/blog/post/fff-317\n\nA* Reversed resumeable\n-> der abstrakte Pathfinder speichert seine Daten zwischen\nBase-Pathfinder (tile based)\nAbstract-Pathfinder (chunk based) -> adds into the heuristic function for base pathfinder\n\n\n]#\n\n# Astar\n# astar on chunks\n# astar on tiles, based on which chunk we are in\n\ntype MyGameTile* = ref object\n  passable: bool\n  selected: bool\n\nproc isSelected*(t: MyGameTile): bool = return t.selected\nproc isPassable*(t: MyGameTile): bool = return t.passable\n\nvar m = newMap[MyGameTile](\n    sideLenInChunks= 1,\n    createGameTileCallback\n      = proc(\n        m: Map[MyGameTile], \n        chunk: Chunk[MyGameTile], \n        tile: Tile[MyGameTile]\n      ): MyGameTile = \n        let t = new(MyGameTile)\n        t.passable = if rand(100) < 15: false else: true\n        t.selected = false\n        return t \n)\nlet textures = map.getMapTextures()\nvar clickedTile = none(Tile[MyGameTile])\n\n\n\n\n\n# select random start\n# select random target\n# then get the a star path between\n\nlet c: Option[Chunk[MyGameTile]] = m.getChunkAt(0, 0)\n\nvar paths: seq[Tile[MyGameTile]] = @[]    \nif c.isSome:\n  echo c.get\n  var t: Tile[MyGameTile] = m.getTileAt(0, 0).get\n\n  var t2: Tile[MyGameTile] = m.getTileAt(14*32, 14*32).get\n\n  var myChunk: Chunk[MyGameTile] = c.get\n\n  for n in myChunk.neighbors(m.getTileAt(14*32, 14*32).get):\n    echo n\n\n  paths = myChunk.getPathFromTo(t, t2)\n  echo paths\n\nnimlove.runProgramm(\n\n  onUpdate = proc(deltaTime: float) = \n\n    m.drawMap()\n\n    if nimlove.getMouseLeftClickThisFrame():\n      echo \"mouse left click\"\n      let tile = m.getTileAt(nimlove.getMouseX(), nimlove.getMouseY())\n      if tile.isSome:\n        if tile.get.gameTile.isPassable():\n          clickedTile = tile\n          let myT = cast[MyGameTile](tile.get.gameTile)\n          myT.passable = false\n          echo \"clicked tile: \", clickedTile.get.x, \", \", clickedTile.get.y\n\n    if clickedTile.isSome:\n      let texture = textures[\"blue_outline\"]\n      texture.draw(clickedTile.get.x, clickedTile.get.y)\n    for tpos in map.allVisitedDebug:\n      let texture = textures[\"ball_black\"]\n      texture.draw(tpos.x*32, tpos.y*32)\n    for t in paths:\n      let texture = textures[\"ball_blue\"]\n      texture.draw(t.x, t.y)\n    for t in allCostsDebug:\n      drawText($t.cost.int, t.x*32+4, t.y*32, color=Yellow)\n    for t in allCostsDebug:\n      drawText($t.cost.int, t.x*32+4, t.y*32+15, color=White)\n\n    text.displayDebugInfo()\n    \n  ,\n  onKeyDown= proc(key: NimLoveKey) = discard,\n  onKeyUp= proc(key: NimLoveKey) = discard,\n  onMouseDown= proc(x, y: int) = discard,\n  onMouseUp= proc(x, y: int) = discard,\n  onMouseMove= proc(x, y: int) = discard,\n  onMouseScrollUp= proc() = discard,\n  onMouseScrollDown= proc() = discard,\n  onQuit= proc() = discard,\n)\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/examples/pathfind/pathfind.nim b/examples/pathfind/pathfind.nim
+--- a/examples/pathfind/pathfind.nim	(revision 98b8b9ca269d77d113065d25b7e0603c63512bcd)
++++ b/examples/pathfind/pathfind.nim	(date 1704276072101)
+@@ -46,7 +46,8 @@
+ proc isPassable*(t: MyGameTile): bool = return t.passable
+ 
+ var m = newMap[MyGameTile](
+-    sideLenInChunks= 1,
++    sideLenInChunksX= 1,
++    sideLenInChunksY= 1,
+     createGameTileCallback
+       = proc(
+         m: Map[MyGameTile], 

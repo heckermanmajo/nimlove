@@ -1,4 +1,4 @@
-import std/[json, strutils, strformat]
+import std/[json, strutils, strformat, tables]
 import ../../src/nimlove as nimlove
 import ../../src/nimlove/[image, map]
 
@@ -35,17 +35,17 @@ type
 
 
 var textures = map.getMapTextures()
-var myTexture = textures["TileType.Water"]
+var myTexture = textures["water"]
 
 proc isSelected*(t: MyGameTile): bool = return t.selected
 proc isPassable*(t: MyGameTile): bool = return t.passable
 
 proc draw*(t: MyGameTile, x, y: int) = 
   if t.tileType == TileType.Water:
-    
-    
+    discard
   else:
-    map.drawTile(TileType.Land, x, y)
+    #t.drawTile()
+    discard
 
 
 proc `%`*(t: TileType): JsonNode = 

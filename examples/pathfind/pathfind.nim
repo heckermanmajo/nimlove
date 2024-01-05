@@ -46,7 +46,8 @@ proc isSelected*(t: MyGameTile): bool = return t.selected
 proc isPassable*(t: MyGameTile): bool = return t.passable
 
 var m = newMap[MyGameTile](
-    sideLenInChunks= 1,
+    sideLenInChunksX= 1,
+    sideLenInChunksY= 1,
     createGameTileCallback
       = proc(
         m: Map[MyGameTile], 
